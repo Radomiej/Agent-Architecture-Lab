@@ -8,6 +8,8 @@ import { useSimulationStore } from '../../store/simulationStore'
 
 const GRID_SIZE = 20
 
+const snap = (v: number) => Math.round(v / GRID_SIZE) * GRID_SIZE
+
 export const CanvasArea: React.FC = () => {
   const canvasRef = useRef<HTMLDivElement>(null)
   const { nodes, connections, selected, zoom, pan, addNode, moveNode, selectNode, clearSelection, setPan, setZoom } = useCanvasStore()
@@ -18,8 +20,6 @@ export const CanvasArea: React.FC = () => {
   const [panning, setPanning] = useState<{ startX: number; startY: number; originX: number; originY: number } | null>(null)
   const [marquee, setMarquee] = useState<{ x: number; y: number; w: number; h: number } | null>(null)
   const marqueeStart = useRef<{ x: number; y: number } | null>(null)
-
-  const snap = (v: number) => Math.round(v / GRID_SIZE) * GRID_SIZE
 
   const handleCanvasMouseDown = useCallback((e: React.MouseEvent) => {
     if (e.target !== canvasRef.current && !(e.target as HTMLElement).classList.contains('canvas-bg')) return
