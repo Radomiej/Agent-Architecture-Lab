@@ -24,7 +24,6 @@ export const ConnectionLayer: React.FC<ConnectionLayerProps> = ({ nodes, connect
       const y2 = toNode.y + NODE_HALF
 
       const dx = x2 - x1
-      const dy = y2 - y1
       const cx1 = x1 + dx * 0.4
       const cy1 = y1
       const cx2 = x2 - dx * 0.4
