@@ -1,0 +1,141 @@
+{
+  "nav": {
+    "agents": "Agents",
+    "presets": "Presets",
+    "saved": "Saved"
+  },
+  "canvas": {
+    "clear": "Clear",
+    "connect": "Connect",
+    "autoConnect": "Auto-connect",
+    "addAgent": "Add agent",
+    "delete": "Delete",
+    "selectAll": "Select all",
+    "clearSelection": "Deselect",
+    "hint": "Drag an agent onto the canvas"
+  },
+  "simulation": {
+    "start": "Simulate",
+    "stop": "Stop",
+    "pause": "Pause",
+    "resume": "Resume",
+    "complete": "Pipeline Complete!",
+    "phase": "Phase",
+    "step": "Step",
+    "agents": "Active agents",
+    "elapsed": "Time"
+  },
+  "cost": {
+    "title": "COST",
+    "center": "Cost Command Center",
+    "overview": "Overview",
+    "breakdown": "Breakdown",
+    "whatif": "What-If",
+    "export": "Export",
+    "context": "Context",
+    "p50": "p50 (typical)",
+    "p90": "p90 (pessimistic)",
+    "totalAgents": "Agents",
+    "tokIn": "Tok In",
+    "tokOut": "Tok Out",
+    "cached": "Cached",
+    "modelMix": "Model mix",
+    "perAgent": "Cost per agent",
+    "perPhase": "Cost breakdown by phase",
+    "severity": {
+      "safe": "Safe",
+      "warn": "Warning",
+      "high": "High",
+      "danger": "Critical"
+    }
+  },
+  "context": {
+    "title": "CTX MAX",
+    "heaviest": "Heaviest agent",
+    "overTarget": "Above 50% target",
+    "avgUsage": "Average usage",
+    "baseline": "Baseline overhead",
+    "target": "Premium target",
+    "isolated": "Subagents are isolated"
+  },
+  "sidebar": {
+    "agentDetails": "Agent details",
+    "presetDetails": "Preset details",
+    "tools": "TOOLS",
+    "model": "MODEL",
+    "phase": "PHASE",
+    "role": "ROLE",
+    "whatItDoes": "WHAT IT DOES",
+    "whatItDoesNot": "WHAT IT DOES NOT",
+    "antiPatterns": "ANTI-PATTERNS",
+    "facts": "FUN FACTS",
+    "prompt": "PROMPT",
+    "showPrompt": "Show prompt",
+    "whenToUse": "WHEN TO USE",
+    "whenNotToUse": "WHEN NOT TO USE",
+    "detailed": "DETAILED DESCRIPTION",
+    "similar": "SIMILAR AGENTS"
+  },
+  "model": {
+    "opus": "Opus 4.6",
+    "sonnet": "Sonnet 4.6",
+    "haiku": "Haiku 4.5",
+    "ctx": "ctx",
+    "input": "input",
+    "output": "output"
+  },
+  "phase": {
+    "strategy": "Strategy",
+    "research": "Research",
+    "debate1": "Debate #1",
+    "debate2": "Debate #2",
+    "build": "Build",
+    "qa": "QA",
+    "hitl": "HITL"
+  },
+  "actions": {
+    "save": "Save",
+    "load": "Load",
+    "export": "Export",
+    "import": "Import",
+    "copy": "Copy",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "close": "Close",
+    "open": "Open",
+    "edit": "Edit",
+    "clone": "Clone",
+    "create": "Create"
+  },
+  "mermaid": {
+    "title": "Mermaid Export",
+    "copy": "Copy to clipboard",
+    "copied": "Copied!",
+    "hint": "Paste into mermaid.live or Obsidian"
+  },
+  "creator": {
+    "title": "Agent Creator",
+    "name": "Name",
+    "phase": "Phase",
+    "model": "Model",
+    "color": "Color",
+    "icon": "Icon",
+    "role": "Role",
+    "tools": "Tools",
+    "prompt": "Prompt",
+    "save": "Save agent",
+    "preview": "Preview",
+    "score": "Prompt quality",
+    "wizard": "Wizard",
+    "form": "Form"
+  },
+  "keyboard": {
+    "shortcuts": "Keyboard shortcuts",
+    "m": "M = Monitor",
+    "k": "K = Cost",
+    "escape": "Esc = Close",
+    "space": "Space = Simulation",
+    "del": "Del = Delete selected"
+  }
+}

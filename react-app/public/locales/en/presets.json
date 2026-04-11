@@ -1,0 +1,98 @@
+{
+  "solo": {
+    "name": "Solo + Validator",
+    "mid": "Simplest pipeline: one worker with validation loop.",
+    "green": ["Simple tasks", "Quick prototypes", "Small budget"],
+    "red": ["Complex systems", "Market research", "Multiple stakeholders"]
+  },
+  "quick_fix": {
+    "name": "Quick Fix",
+    "mid": "Fix-test-fix cycle with continuous loop. For rapid bug fixes.",
+    "green": ["Quick bug fixes", "Production hotfixes", "Regressions"],
+    "red": ["New features", "Architecture refactoring", "Large systems"]
+  },
+  "recon": {
+    "name": "Recon Squad",
+    "mid": "Orchestrator + researcher + builder. Reconnaissance before building.",
+    "green": ["Unknown domain research", "Proof of concept", "Pre-build analysis"],
+    "red": ["Production code", "Full pipeline", "No research needed"]
+  },
+  "trio": {
+    "name": "Classic Trio",
+    "mid": "Backend + Frontend + QA. Classic trio for fullstack work.",
+    "green": ["Fullstack features", "Quick MVP", "Small team"],
+    "red": ["Enterprise systems", "Security-critical", "Complex research"]
+  },
+  "reflect": {
+    "name": "Reflective Loop",
+    "mid": "Research -> Analysis -> Critique. Iterative improvement.",
+    "green": ["Problem analysis", "Iterative approach", "Experiments"],
+    "red": ["Quick deliverables", "Production", "Deadline-driven"]
+  },
+  "bug_hunt": {
+    "name": "Bug Hunter",
+    "mid": "Orchestrator + builder + 2x QA. Bug hunting with multiple validators.",
+    "green": ["Difficult bugs", "Regressions", "Multi-layer testing"],
+    "red": ["New features", "Performance optimization", "Architecture decisions"]
+  },
+  "content": {
+    "name": "Content Pipeline",
+    "mid": "2 researchers + writer + QA. Content pipeline with validation.",
+    "green": ["Technical documentation", "Blog posts", "User guides"],
+    "red": ["Production code", "Architecture", "Security"]
+  },
+  "plan_exec": {
+    "name": "Plan & Execute",
+    "mid": "Plan -> schedule -> build -> validation. Structured pipeline.",
+    "green": ["Medium projects", "Structured deliverables", "Multi-phase work"],
+    "red": ["Exploratory tasks", "Quick fixes", "Research-only"]
+  },
+  "perf_boost": {
+    "name": "Performance Boost",
+    "mid": "Analysis + perf audit. Performance optimization.",
+    "green": ["Slow applications", "Bottleneck investigation", "Load issues"],
+    "red": ["New features", "Security", "Documentation only"]
+  },
+  "startup": {
+    "name": "Startup MVP",
+    "mid": "Orchestrator + analyst + researcher + builder + QA. Complete MVP.",
+    "green": ["First MVP", "New products", "Quick validation"],
+    "red": ["Enterprise migration", "Legacy refactor", "Compliance-heavy"]
+  },
+  "five_minds": {
+    "name": "Five Minds Protocol",
+    "mid": "4 experts + Devil's Advocate. Structured debate with perspectives.",
+    "green": ["Critical decisions", "Architecture choices", "Strategic tradeoffs"],
+    "red": ["Quick tasks", "Clear requirements", "Small budget"]
+  },
+  "deep_five_minds": {
+    "name": "Deep Five Minds Ultimate",
+    "mid": "Deep Research + double Five Minds debate. 24 agents, 5 HITL points.",
+    "green": ["Critical architecture decisions", "High-risk projects", "Best possible analysis"],
+    "red": ["Quick tasks", "Small budget", "Clear requirements"]
+  },
+  "full": {
+    "name": "Full Hierarchy",
+    "mid": "5-layer hierarchy. Gold Standard pipeline.",
+    "green": ["Complex projects", "Enterprise grade", "Full lifecycle"],
+    "red": ["Simple tasks", "Small budget", "Quick fixes"]
+  },
+  "deep": {
+    "name": "Deep Research+Build",
+    "mid": "6 researchers + critic + synthesizer + 4 build + 3 QA.",
+    "green": ["Deep research", "New domains", "Documentation before building"],
+    "red": ["Quick iterations", "No research needed", "Small budget"]
+  },
+  "security": {
+    "name": "Security Hardening",
+    "mid": "Builder + 3x QA + Manager GO/NO-GO. Application hardening.",
+    "green": ["Security audit", "OWASP compliance", "Pre-launch security"],
+    "red": ["New features", "Performance", "Documentation only"]
+  },
+  "microservices": {
+    "name": "Microservices",
+    "mid": "Planning + 4x build + 3x QA. Building microservices.",
+    "green": ["Microservices architecture", "Service decomposition", "API design"],
+    "red": ["Monolith refactor", "Simple apps", "Tight deadlines"]
+  }
+}
