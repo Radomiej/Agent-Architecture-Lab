@@ -9,7 +9,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id: string) {
-          if (id.includes('node_modules/react-dom') || id.includes('node_modules/react/')) return 'vendor'
+          if (id.includes('node_modules/react-dom') || id.includes('node_modules/react/') || id === 'react') return 'vendor'
           if (id.includes('node_modules/react-i18next') || id.includes('node_modules/i18next')) return 'i18n'
           if (id.includes('node_modules/zustand')) return 'zustand'
           return undefined
