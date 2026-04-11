@@ -1,0 +1,313 @@
+/* ===================================================================
+   Agent Architecture Designer - Design Tokens
+   Extracted from v32.16 index.html :root section
+   =================================================================== */
+
+:root {
+  /* ---------- Legacy v32.7 tokens (kept for back-compat) ---------- */
+  --bg0:#06060A; --bg1:#0D0D1A; --bg2:#141428; --bg3:#1E1E3A;
+  --bg-panel:rgba(15,15,24,0.85); --bg-card:rgba(6,6,10,0.5); --bg-input:rgba(6,6,10,0.6);
+  --accent1:#818CF8; --accent2:#34D399; --accent3:#FBBF24; --accent4:#F87171;
+  --gold:#F59E0B;
+  --brd:rgba(129,140,248,0.15);
+  --glow:rgba(129,140,248,0.05);
+  --grad:linear-gradient(135deg,var(--accent1),var(--accent2));
+  --hd:'Space Grotesk',sans-serif;
+  --bd:'Inter',sans-serif;
+  --mn:'JetBrains Mono',monospace;
+
+  /* ---------- 1.1 Primitives: Neutral ramp ---------- */
+  --p-ink-0:#06080C;
+  --p-ink-1:#0B0D12;
+  --p-ink-2:#12151C;
+  --p-ink-3:#1A1F2B;
+  --p-ink-4:#242B3A;
+  --p-ink-5:#2B3142;
+
+  /* ---------- 1.1 Primitives: Fog ramp ---------- */
+  --p-fog-1:#E6E8EE;
+  --p-fog-2:#B5BAC7;
+  --p-fog-3:#8089A0;
+  --p-fog-4:#545B6E;
+
+  /* ---------- 1.1 Primitives: Accent ramps ---------- */
+  --p-violet-300:#C4B5FD;
+  --p-violet-400:#A78BFA;
+  --p-violet-500:#8B5CF6;
+  --p-violet-700:#6D28D9;
+  --p-amber-300:#FCD34D;
+  --p-amber-400:#FBBF24;
+  --p-amber-500:#F59E0B;
+  --p-amber-700:#B45309;
+  --p-cyan-400:#22C4E6;
+  --p-cyan-600:#0891B2;
+  --p-blue-400:#5B8DEF;
+  --p-blue-500:#60A5FA;
+  --p-blue-600:#1F5FD6;
+  --p-green-400:#34D399;
+  --p-green-700:#047857;
+  --p-red-400:#F87171;
+  --p-red-600:#B91C1C;
+
+  /* ---------- 1.1 Primitives: Phase (Okabe-Ito CVD-safe) ---------- */
+  --p-phase-strategy:#5B8DEF;
+  --p-phase-research:#22C4E6;
+  --p-phase-debate:#A78BFA;
+  --p-phase-build:#34D399;
+  --p-phase-qa:#F87171;
+  --p-phase-hitl:#FBBF24;
+
+  /* ---------- 1.1 Primitives: Model ---------- */
+  --p-model-opus:#F59E0B;
+  --p-model-sonnet:#8B5CF6;
+  --p-model-haiku:#34D399;
+
+  /* ---------- 1.1 Primitives: Ink (two-tier brand/ink) ---------- */
+  --p-violet-300-ink:#C4B5FD;
+  --p-blue-300-ink:#8AB4F8;
+  --p-red-300-ink:#FCA5A5;
+
+  /* ---------- 1.2 Semantic: Surface ramp ---------- */
+  --s-0:var(--p-ink-0);
+  --s-1:var(--p-ink-1);
+  --s-2:var(--p-ink-2);
+  --s-3:var(--p-ink-3);
+  --s-4:var(--p-ink-4);
+  --s-5:var(--p-ink-5);
+
+  /* ---------- 1.2 Semantic: Text ramp ---------- */
+  --fg-0:var(--p-fog-1);
+  --fg-1:var(--p-fog-2);
+  --fg-2:var(--p-fog-3);
+  --fg-3:var(--p-fog-4);
+  --t1:var(--fg-0);
+  --t2:var(--fg-1);
+  --t3:var(--fg-2);
+  --t4:var(--fg-3);
+
+  /* ---------- 1.2 Semantic: Borders ---------- */
+  --border-hair:rgba(255,255,255,0.06);
+  --border-faint:rgba(255,255,255,0.06);
+  --border-soft:rgba(255,255,255,0.08);
+  --border:rgba(255,255,255,0.08);
+  --border-strong:rgba(255,255,255,0.14);
+
+  /* ---------- 1.2 Semantic: Accent / focus ---------- */
+  --accent:var(--p-violet-400);
+  --accent-rgb:167,139,250;
+  --focus-ring:var(--p-violet-400);
+  --border-focus:var(--p-violet-400);
+
+  /* ---------- 1.2 Semantic: State layers ---------- */
+  --state-hover:rgba(255,255,255,0.06);
+  --state-focus:rgba(167,139,250,0.14);
+  --state-pressed:rgba(255,255,255,0.10);
+  --state-selected:rgba(167,139,250,0.12);
+
+  /* ---------- 1.2 Semantic: State colors ---------- */
+  --state-success:#34D399;
+  --state-warning:#FBBF24;
+  --state-danger:#F87171;
+  --state-info:#60A5FA;
+  --state-neutral:#8089A0;
+  --state-success-rgb:52,211,153;
+  --state-warning-rgb:251,191,36;
+  --state-danger-rgb:248,113,113;
+  --state-info-rgb:96,165,250;
+  --state-neutral-rgb:128,137,160;
+
+  /* ---------- 1.2 Semantic: Phase brand fills ---------- */
+  --ph-strategy:#5B8DEF;  --ph-strategy-rgb:91,141,239;
+  --ph-research:#22C4E6;  --ph-research-rgb:34,196,230;
+  --ph-debate:#A78BFA;    --ph-debate-rgb:167,139,250;
+  --ph-build:#34D399;     --ph-build-rgb:52,211,153;
+  --ph-qa:#F87171;        --ph-qa-rgb:248,113,113;
+  --ph-hitl:#FBBF24;      --ph-hitl-rgb:251,191,36;
+  --ph-debate1:var(--ph-debate);
+  --ph-debate2:var(--ph-debate);
+
+  /* ---------- 1.2 Semantic: Phase ink ---------- */
+  --ph-strategy-ink:#8AB4F8;
+  --ph-research-ink:var(--ph-research);
+  --ph-debate-ink:#C4B5FD;
+  --ph-build-ink:var(--ph-build);
+  --ph-qa-ink:#FCA5A5;
+  --ph-hitl-ink:var(--ph-hitl);
+
+  /* ---------- 1.2 Semantic: Model brand fills ---------- */
+  --mc-opus:#F59E0B;    --mc-opus-rgb:245,158,11;
+  --mc-sonnet:#8B5CF6;  --mc-sonnet-rgb:139,92,246;
+  --mc-haiku:#34D399;   --mc-haiku-rgb:52,211,153;
+
+  /* ---------- 1.2 Semantic: Model ink ---------- */
+  --mc-opus-ink:var(--mc-opus);
+  --mc-sonnet-ink:#C4B5FD;
+  --mc-haiku-ink:var(--mc-haiku);
+
+  /* ---------- 1.2 Semantic: Shadow tokens ---------- */
+  --sh-inset-top:inset 0 1px 0 rgba(255,255,255,0.11);
+  --sh-inset-top-hi:inset 0 1px 0 rgba(255,255,255,0.14);
+  --sh-inset-bot:inset 0 -1px 0 rgba(0,0,0,0.35);
+  --sh-ambient-1:0 20px 50px -20px rgba(0,0,0,0.55);
+  --sh-ambient-2:0 24px 60px -24px rgba(0,0,0,0.55);
+  --sh-key-2:0 8px 24px -12px rgba(0,0,0,0.40);
+  --sh-e1:var(--sh-inset-top),var(--sh-ambient-1);
+  --sh-e2:var(--sh-inset-top-hi),var(--sh-ambient-2),var(--sh-key-2);
+  --sh-e3:var(--sh-inset-top-hi),0 32px 80px -20px rgba(0,0,0,0.65),0 12px 32px -12px rgba(0,0,0,0.45);
+  --shadow:var(--sh-e1);
+
+  /* ---------- 1.2 Semantic: Glass tokens ---------- */
+  --glass-thin-bg:rgba(18,20,28,0.58);
+  --glass-thin-blur:blur(14px) saturate(160%);
+  --glass-thin-border:var(--border-hair);
+  --glass-thin-inset-top:var(--sh-inset-top);
+  --glass-thin-inset-bot:var(--sh-inset-bot);
+  --glass-thin-drop:var(--sh-ambient-1);
+  --glass-thick-bg:rgba(10,12,18,0.72);
+  --glass-thick-blur:blur(24px) saturate(180%);
+  --glass-thick-border:var(--border-soft);
+  --glass-thick-inset-top:var(--sh-inset-top-hi);
+  --glass-thick-inset-bot:var(--sh-inset-bot);
+  --glass-thick-drop:var(--sh-ambient-2),var(--sh-key-2);
+  --glass-hud-bg:rgba(18,20,28,0.35);
+  --glass-hud-blur:blur(10px) saturate(160%);
+
+  /* ---------- 1.3 Type tokens: font stacks ---------- */
+  --ff-sans:"InterVariable","Inter",-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",system-ui,sans-serif;
+  --ff-mono:"Geist Mono","JetBrains Mono","SF Mono","Cascadia Code",ui-monospace,Menlo,Consolas,monospace;
+  --ff-display:var(--ff-sans);
+
+  /* ---------- 1.3 Type tokens: scale ---------- */
+  --fs-11:11px; --lh-11:1.35;
+  --fs-12:12px; --lh-12:1.35;
+  --fs-13:13px; --lh-13:1.30;
+  --fs-14:14px; --lh-14:1.50;
+  --fs-16:16px; --lh-16:1.55;
+  --fs-18:18px; --lh-18:1.35;
+  --fs-24:24px; --lh-24:1.20;
+  --fs-32:32px; --lh-32:1.10;
+
+  /* ---------- 1.3 Type tokens: tracking ---------- */
+  --tr-display:-0.02em;
+  --tr-title:-0.01em;
+  --tr-body:0;
+  --tr-dense:0.005em;
+  --tr-caps:0.04em;
+
+  /* ---------- 1.3 Type tokens: weights ---------- */
+  --fw-regular:420;
+  --fw-medium:520;
+  --fw-semibold:580;
+  --fw-bold:680;
+
+  /* ---------- 1.3 Type tokens: OpenType features ---------- */
+  --ot-body:"kern" 1,"calt" 1,"liga" 1,"cv11" 1;
+  --ot-tnum:"tnum" 1,"zero" 1,"lnum" 1;
+
+  /* ---------- 1.4 Motion: duration ladder ---------- */
+  --dur-instant:80ms;
+  --dur-fast:150ms;
+  --dur-base:220ms;
+  --dur-medium:320ms;
+  --dur-slow:480ms;
+  --dur-hero:640ms;
+
+  /* ---------- 1.4 Motion: easings ---------- */
+  --ease-standard:cubic-bezier(0.2,0,0,1);
+  --ease-decelerate:cubic-bezier(0,0,0,1);
+  --ease-accelerate:cubic-bezier(0.3,0,1,1);
+  --ease-emphasized:cubic-bezier(0.05,0.7,0.1,1);
+  --ease-linear:linear;
+  --ease-spring-snappy:linear(0,0.062,0.208,0.41,0.637,0.866,1.077,1.253,1.383,1.458,1.482,1.46,1.403,1.324,1.238,1.157,1.091,1.042,1.013,1);
+  --ease-spring-gentle:linear(0,0.009,0.035,0.078,0.138,0.213,0.302,0.402,0.511,0.625,0.742,0.858,0.971,1.077,1.176,1.265,1.343,1.41,1.464,1.505,1.533,1.546,1.547,1.535,1.513,1.482,1.443,1.399,1.351,1.301,1.25,1.201,1.154,1.112,1.074,1.042,1.016,0.997,0.984,0.977,0.975,0.978,1);
+
+  /* ---------- 1.5 Shape: radius ramp ---------- */
+  --r-0:0;
+  --r-1:4px;
+  --r-2:6px;
+  --r-3:8px;
+  --r-4:10px;
+  --r-5:14px;
+  --r-6:20px;
+}
+
+/* v32.8 Light theme override */
+[data-theme="light"] {
+  --bg0:#F7F8FC; --bg1:#EFF1F8; --bg2:#E8EAF3; --bg3:#DFE2EF;
+  --bg-panel:rgba(255,255,255,0.92); --bg-card:rgba(255,255,255,0.7); --bg-input:rgba(240,242,250,0.8);
+  --accent1:#6366F1; --accent2:#059669; --accent3:#D97706; --accent4:#DC2626;
+  --gold:#B45309;
+  --brd:rgba(99,102,241,0.12);
+  --glow:rgba(99,102,241,0.04);
+
+  --s-0:#FFFFFF; --s-1:#FAFAFB; --s-2:#FFFFFF; --s-3:#F4F5F8; --s-4:#E9EBF0; --s-5:#FFFFFF;
+
+  --fg-0:#0B0D12; --fg-1:#545B6E; --fg-2:#8089A0; --fg-3:#B5BAC7;
+  --t1:var(--fg-0); --t2:var(--fg-1); --t3:var(--fg-2); --t4:var(--fg-3);
+
+  --border-hair:rgba(11,13,18,0.08);
+  --border-faint:rgba(11,13,18,0.08);
+  --border-soft:rgba(11,13,18,0.10);
+  --border:rgba(11,13,18,0.10);
+  --border-strong:rgba(11,13,18,0.18);
+
+  --accent:var(--p-violet-700);
+  --accent-rgb:109,40,217;
+  --focus-ring:var(--p-violet-700);
+  --border-focus:var(--p-violet-700);
+
+  --state-hover:rgba(11,13,18,0.05);
+  --state-focus:rgba(109,40,217,0.12);
+  --state-pressed:rgba(11,13,18,0.08);
+  --state-selected:rgba(109,40,217,0.10);
+
+  --state-success:#047857;
+  --state-warning:#B45309;
+  --state-danger:#B91C1C;
+  --state-info:#1F5FD6;
+  --state-neutral:#545B6E;
+
+  --ph-strategy:#1F5FD6;  --ph-strategy-rgb:31,95,214;
+  --ph-research:#0891B2;  --ph-research-rgb:8,145,178;
+  --ph-debate:#6D28D9;    --ph-debate-rgb:109,40,217;
+  --ph-build:#047857;     --ph-build-rgb:4,120,87;
+  --ph-qa:#B91C1C;        --ph-qa-rgb:185,28,28;
+  --ph-hitl:#B45309;      --ph-hitl-rgb:180,83,9;
+  --ph-debate1:var(--ph-debate);
+  --ph-debate2:var(--ph-debate);
+
+  --ph-strategy-ink:var(--ph-strategy);
+  --ph-research-ink:var(--ph-research);
+  --ph-debate-ink:var(--ph-debate);
+  --ph-build-ink:var(--ph-build);
+  --ph-qa-ink:var(--ph-qa);
+  --ph-hitl-ink:var(--ph-hitl);
+
+  --mc-opus:#B45309;    --mc-opus-rgb:180,83,9;
+  --mc-sonnet:#6D28D9;  --mc-sonnet-rgb:109,40,217;
+  --mc-haiku:#047857;   --mc-haiku-rgb:4,120,87;
+
+  --mc-opus-ink:var(--mc-opus);
+  --mc-sonnet-ink:var(--mc-sonnet);
+  --mc-haiku-ink:var(--mc-haiku);
+
+  --sh-inset-top:inset 0 1px 0 rgba(255,255,255,0.9);
+  --sh-inset-top-hi:inset 0 1px 0 rgba(255,255,255,1);
+  --sh-inset-bot:inset 0 -1px 0 rgba(11,13,18,0.04);
+  --sh-ambient-1:0 10px 30px -12px rgba(11,13,18,0.18);
+  --sh-ambient-2:0 20px 50px -20px rgba(11,13,18,0.22);
+  --sh-key-2:0 4px 14px -6px rgba(11,13,18,0.14);
+  --sh-e1:var(--sh-inset-top),var(--sh-ambient-1);
+  --sh-e2:var(--sh-inset-top-hi),var(--sh-ambient-2),var(--sh-key-2);
+  --sh-e3:var(--sh-inset-top-hi),0 24px 60px -16px rgba(11,13,18,0.24),0 8px 24px -10px rgba(11,13,18,0.18);
+  --shadow:var(--sh-e1);
+
+  --glass-thin-bg:rgba(255,255,255,0.72);
+  --glass-thin-blur:blur(14px) saturate(140%);
+  --glass-thin-border:var(--border-hair);
+  --glass-thick-bg:rgba(255,255,255,0.88);
+  --glass-thick-blur:blur(24px) saturate(150%);
+  --glass-thick-border:var(--border-soft);
+  --glass-hud-bg:rgba(255,255,255,0.60);
+  --glass-hud-blur:blur(10px) saturate(140%);
+}

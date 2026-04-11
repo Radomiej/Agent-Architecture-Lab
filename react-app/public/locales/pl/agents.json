@@ -1,0 +1,212 @@
+{
+  "orchestrator": {
+    "name": "Orkiestrator",
+    "mid": "Centralny punkt decyzyjny calego systemu. Dekomponuje zadania, deleguje i kontroluje bramy miedzy fazami.",
+    "green": ["Zarzadzanie wielofazowym pipelineiem", "Delegowanie do specjalistow", "Rozwiazywanie konfliktow"],
+    "red": ["Generowanie tresci bezposrednio", "Zastepowanie specjalistow", "Operacje bez podzadania"]
+  },
+  "synthesizer": {
+    "name": "Synthesizer",
+    "mid": "Laczy wyniki wszystkich agentow w spojny, kompletny output. Usuwa sprzecznosci i duplikaty.",
+    "green": ["Integracja wynikow wieloagentowych", "Usuwanie sprzecznosci", "Tworzenie finalnego outputu"],
+    "red": ["Generowanie nowej tresci od zera", "Research", "Zastepowanie specjalistow"]
+  },
+  "analyst": {
+    "name": "Analityk",
+    "mid": "Dekomponuje problem na mierzalne komponenty. Identyfikuje zaleznosci, ryzyka i kryteria sukcesu.",
+    "green": ["Dekompozycja wymagan", "Analiza ryzyk", "Definiowanie kryteriow sukcesu"],
+    "red": ["Pisanie kodu", "Research rynkowy", "Decyzje architekturalne"]
+  },
+  "planner": {
+    "name": "Planner",
+    "mid": "Tworzy plan fazowy projektu. Definiuje kamienie milowe, zaleznosci i optymalny workflow.",
+    "green": ["Planowanie fazowe", "Definiowanie milestones", "Sciezka krytyczna"],
+    "red": ["Szacowanie budzetu finansowego", "Zarzadzanie zasobami", "Pisanie kodu"]
+  },
+  "res_tech": {
+    "name": "Tech Researcher",
+    "mid": "Researches technical documentation, APIs, frameworks. Reports with confidence labels.",
+    "green": ["Dokumentacja techniczna", "Analiza API", "Best practices techniczne"],
+    "red": ["Ocena biznesowej wartosci", "Testowanie kodu", "Porownywanie technologii (rola critic)"]
+  },
+  "res_ux": {
+    "name": "UX Researcher",
+    "mid": "Bada wzorce UX, trendy designu i best practices dostepnosci.",
+    "green": ["Wzorce UX", "Trendy designu", "Dostepnosc WCAG"],
+    "red": ["Implementacja UI", "Decyzje backendowe", "Code review"]
+  },
+  "res_reddit": {
+    "name": "Reddit Researcher",
+    "mid": "Przeszukuje Reddit i fora spolecznosciowe w poszukiwaniu opinii uzytkownikow.",
+    "green": ["Opinie uzytkownikow", "Pain points spolecznosci", "Trendy dyskusji"],
+    "red": ["Oficjalna dokumentacja", "Analiza techniczna", "Biznesowa analiza"]
+  },
+  "res_x": {
+    "name": "X/Twitter Researcher",
+    "mid": "Monitoruje dyskusje na X/Twitter w poszukiwaniu trendow i opinii ekspertow.",
+    "green": ["Trendy X/Twitter", "Opinie ekspertow", "Reakcje na launche"],
+    "red": ["Gleboka analiza techniczna", "Oficjalna dokumentacja", "Badania rynkowe"]
+  },
+  "res_github": {
+    "name": "GitHub Researcher",
+    "mid": "Analizuje repozytoria GitHub, issues, PRy i dyskusje open source.",
+    "green": ["Issues i PRy", "Popularnosc bibliotek", "Dyskusje open source"],
+    "red": ["Dokumentacja biznesowa", "UX research", "Social media trends"]
+  },
+  "res_forums": {
+    "name": "Forums Researcher",
+    "mid": "Przeszukuje fora techniczne (Stack Overflow, HN, Dev.to) w poszukiwaniu rozwizan.",
+    "green": ["Stack Overflow solutions", "Hacker News discussions", "Dev.to articles"],
+    "red": ["Oficjalna dokumentacja", "Social media", "Biznesowy research"]
+  },
+  "res_docs": {
+    "name": "Docs Researcher",
+    "mid": "Analizuje oficjalna dokumentacje, RFC, specyfikacje i changelogi.",
+    "green": ["Oficjalna dokumentacja", "RFC i specyfikacje", "Changelogi"],
+    "red": ["Opinie uzytkownikow", "Trendy spolecznosciowe", "Kod produkcyjny"]
+  },
+  "res_critic": {
+    "name": "Research Critic",
+    "mid": "Krytycznie ocenia wyniki innych researcherow. Identyfikuje luki, sprzecznosci i bias.",
+    "green": ["Walidacja researchu", "Identyfikacja luk", "Konsolidacja wynikow"],
+    "red": ["Przeprowadzanie wlasnego researchu", "Implementacja", "Decyzje projektowe"]
+  },
+  "backend": {
+    "name": "Backend Dev",
+    "mid": "Implementuje logike serwera, API, bazy danych i integracje backendowe.",
+    "green": ["API REST/GraphQL", "Logika serwera", "Integracje backendowe"],
+    "red": ["Frontend/UI", "DevOps/infra (chyba ze w zakresie)", "Dokumentacja dla uzytkownikow"]
+  },
+  "frontend": {
+    "name": "Frontend Dev",
+    "mid": "Implementuje interfejs uzytkownika, komponenty React i integracje z API.",
+    "green": ["React/Vue/Angular", "Integracja z API", "Responsywnosc UI"],
+    "red": ["Backend logic", "Database design", "DevOps"]
+  },
+  "feature": {
+    "name": "Feature Dev",
+    "mid": "Implementuje konkretne funkcjonalnosci i integruje nowe cechy do istniejacego kodu.",
+    "green": ["Nowe funkcjonalnosci", "Integracja z istniejacym kodem", "AI/ML features"],
+    "red": ["Refactoring arch", "Infrastructure", "Design decisions"]
+  },
+  "designer": {
+    "name": "Designer",
+    "mid": "Projektuje UI/UX, tworzy design system, komponenty wizualne i style.",
+    "green": ["Design system", "Komponenty wizualne", "UX flows"],
+    "red": ["Backend implementation", "Database design", "Kod produkcyjny"]
+  },
+  "integrator": {
+    "name": "Integrator",
+    "mid": "Laczy wszystkie komponenty systemu. Zapewnia spojnosc interfejsow i komunikacje miedzy modulami.",
+    "green": ["Integracja komponentow", "Spojnosc interfejsow", "End-to-end testing"],
+    "red": ["Implementacja nowych features", "Infrastructure setup", "UX design"]
+  },
+  "writer": {
+    "name": "Writer",
+    "mid": "Tworzy dokumentacje techniczna, README, komentarze i tresci dla uzytkownikow.",
+    "green": ["README i dokumentacja", "Komentarze kodu", "User guides"],
+    "red": ["Pisanie kodu produkcyjnego", "Decyzje techniczne", "Testing"]
+  },
+  "qa_security": {
+    "name": "QA Security",
+    "mid": "Przeprowadza audyt bezpieczenstwa. Identyfikuje podatnosci, XSS, SQL injection i OWASP Top 10.",
+    "green": ["Audyt OWASP", "Podatnosci XSS/SQLi", "Penetration testing"],
+    "red": ["Feature development", "Performance testing", "Documentation"]
+  },
+  "qa_quality": {
+    "name": "QA Quality",
+    "mid": "Testuje jakosc kodu, pokrycie testami, edge cases i regresje.",
+    "green": ["Unit/integration tests", "Edge cases", "Regresje"],
+    "red": ["Security audits", "Performance profiling", "Feature development"]
+  },
+  "qa_perf": {
+    "name": "QA Performance",
+    "mid": "Profiluje wydajnosc aplikacji. Identyfikuje bottlenecki i optymalizuje kluczowe sciezki.",
+    "green": ["Profiling", "Bottleneck identification", "Load testing"],
+    "red": ["Security testing", "Functional testing", "Feature development"]
+  },
+  "qa_manager": {
+    "name": "QA Manager",
+    "mid": "Koordynuje prace QA, kompiluje raporty z testow i wydaje rekomendacje GO/NO-GO.",
+    "green": ["Koordynacja QA", "GO/NO-GO decisions", "Test reports"],
+    "red": ["Bezposrednie testowanie", "Feature development", "Architecture decisions"]
+  },
+  "expert_pragmatist": {
+    "name": "Pragmatist",
+    "mid": "Reprezentuje perspektywe praktyczna. 'Czy to da sie zrobic w rozumnym czasie?'",
+    "green": ["Ocena wykonalnosci", "Risk management", "Incremental delivery"],
+    "red": ["Wizjonerskie propozycje bez ROI", "Long-term idealism", "Pure research"]
+  },
+  "expert_innovator": {
+    "name": "Innovator",
+    "mid": "Reprezentuje perspektywe innowacyjna. Proponuje niekonwencjonalne rozwiazania.",
+    "green": ["Kreatywne rozwiazania", "Nowe technologie", "Disruption opportunities"],
+    "red": ["Konserwatywne podejscia", "Incremental improvements", "Risk aversion"]
+  },
+  "expert_analyst": {
+    "name": "Analyst Expert",
+    "mid": "Reprezentuje perspektywe analityczna. Wymaga dowodow i mierzalnych wynikow.",
+    "green": ["Analiza danych", "Evidence-based decisions", "Measurable outcomes"],
+    "red": ["Gut-feeling decisions", "Intuitive approaches", "Anecdotal evidence"]
+  },
+  "expert_user": {
+    "name": "User Advocate",
+    "mid": "Reprezentuje perspektywe uzytkownika. 'Czy to rozwieze problem uzytkownika?'",
+    "green": ["User needs advocacy", "UX perspective", "Customer empathy"],
+    "red": ["Technical decisions", "Business strategy", "Infrastructure"]
+  },
+  "expert_devil": {
+    "name": "Devil's Advocate",
+    "mid": "Aktywnie kontestuje wszystkie propozycje. Szuka dziur, sprzecznosci i ukrytych zalozen.",
+    "green": ["Critical evaluation", "Assumption testing", "Stress testing proposals"],
+    "red": ["Constructive proposals", "Team morale management", "Final decisions"]
+  },
+  "decision_presenter": {
+    "name": "Decision Presenter",
+    "mid": "Prezentuje opcje decyzyjne uzytkownikowi w ustrukturyzowany sposob. Zbiera wybory HITL.",
+    "green": ["HITL decision presentation", "Option framing", "Countdown timers"],
+    "red": ["Making decisions itself", "Technical implementation", "Research"]
+  },
+  "db_architect": {
+    "name": "DB Architect",
+    "mid": "Projektuje schematy baz danych, indeksy i migracje zero-downtime.",
+    "green": ["Schema design", "Index optimization", "Zero-downtime migrations"],
+    "red": ["Application logic", "UI implementation", "DevOps"]
+  },
+  "observability_engineer": {
+    "name": "Observability Eng.",
+    "mid": "Implementuje observability (metrics, logs, traces). Definiuje SLI/SLO.",
+    "green": ["Metrics/logs/traces", "SLI/SLO definition", "Alert configuration"],
+    "red": ["Application development", "Database design", "UI implementation"]
+  },
+  "gtm_strategist": {
+    "name": "GTM Strategist",
+    "mid": "Tworzy strategie go-to-market. Definiuje ICP, pozycjonowanie, pricing i plan launchu.",
+    "green": ["ICP definition", "Pricing strategy", "Launch planning"],
+    "red": ["Technical implementation", "Product development", "Customer support"]
+  },
+  "statistician": {
+    "name": "Statistician",
+    "mid": "Projektuje eksperymenty statystyczne. Wybiera testy, oblicza power i analizuje wyniki.",
+    "green": ["Experiment design", "Statistical tests", "Power calculations"],
+    "red": ["Data collection", "Dashboard building", "Product decisions"]
+  },
+  "eda_analyst": {
+    "name": "EDA Analyst",
+    "mid": "Przeprowadza exploratory data analysis. Profiluje dane, wykrywa anomalie i korelacje.",
+    "green": ["Data profiling", "Anomaly detection", "Correlation analysis"],
+    "red": ["Predictive modeling", "Dashboard building", "Data collection"]
+  },
+  "control_mapper": {
+    "name": "Control Mapper",
+    "mid": "Mapuje wymagania compliance (GDPR, SOC2, ISO27001) na kontrole i luki.",
+    "green": ["GDPR/SOC2 mapping", "Gap analysis", "Control matrix"],
+    "red": ["Technical implementation", "Legal interpretation", "Audit execution"]
+  },
+  "telemetry_surfer": {
+    "name": "Telemetry Surfer",
+    "mid": "Surfuje po telemetrii produkcyjnej. Pisze reprodukowalne PromQL/LogQL queries.",
+    "green": ["PromQL/LogQL queries", "Incident investigation", "Pattern detection"],
+    "red": ["Alert configuration", "Dashboard design", "Application code"]
+  }
+}

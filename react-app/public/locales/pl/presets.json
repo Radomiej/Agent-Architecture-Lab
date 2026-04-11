@@ -1,0 +1,98 @@
+{
+  "solo": {
+    "name": "Solo + Validator",
+    "mid": "Najprostszy pipeline: jeden worker z petla walidacyjna.",
+    "green": ["Proste zadania", "Szybkie prototypy", "Maly budzet"],
+    "red": ["Zlozzone systemy", "Research rynkowy", "Wiele interesariuszy"]
+  },
+  "quick_fix": {
+    "name": "Quick Fix",
+    "mid": "Fix-test-fix cycle z petla ciagla. Dla szybkich napraw bugów.",
+    "green": ["Szybkie naprawy bugów", "Hotfixy produkcyjne", "Regresje"],
+    "red": ["Nowe features", "Refactoring arch", "Duze systemy"]
+  },
+  "recon": {
+    "name": "Recon Squad",
+    "mid": "Orkiestrator + researcher + builder. Rozpoznanie terenu przed budowa.",
+    "green": ["Research nieznanej domeny", "Proof of concept", "Analiza przed budowa"],
+    "red": ["Produkcyjny kod", "Pelny pipeline", "Bez researchu"]
+  },
+  "trio": {
+    "name": "Classic Trio",
+    "mid": "Backend + Frontend + QA. Klasyczny trojka dla fullstack.",
+    "green": ["Fullstack features", "Szybkie MVP", "Maly zespol"],
+    "red": ["Enterprise systemy", "Security-critical", "Kompleksowy research"]
+  },
+  "reflect": {
+    "name": "Reflective Loop",
+    "mid": "Research -> Analysis -> Critique. Iteracyjne doskonalenie.",
+    "green": ["Analiza problemu", "Iteracyjne podejscie", "Eksperymenty"],
+    "red": ["Szybkie deliverables", "Produkcja", "Deadline-driven"]
+  },
+  "bug_hunt": {
+    "name": "Bug Hunter",
+    "mid": "Orkiestrator + builder + 2x QA. Polowanie na bugi z wieloma walidatorami.",
+    "green": ["Trudne bugi", "Regresje", "Testowanie wielowarstwowe"],
+    "red": ["Nowe features", "Performance optimization", "Architecture decisions"]
+  },
+  "content": {
+    "name": "Content Pipeline",
+    "mid": "2 researchers + writer + QA. Pipeline tresci z walidacja.",
+    "green": ["Dokumentacja techniczna", "Blog posts", "User guides"],
+    "red": ["Kod produkcyjny", "Architecture", "Security"]
+  },
+  "plan_exec": {
+    "name": "Plan & Execute",
+    "mid": "Plan -> schedule -> build -> validation. Strukturalny pipeline.",
+    "green": ["Srednie projekty", "Ustrukturyzowane deliverables", "Multi-phase work"],
+    "red": ["Eksploracyjne zadania", "Szybkie fixy", "Research-only"]
+  },
+  "perf_boost": {
+    "name": "Performance Boost",
+    "mid": "Analysis + perf audit. Optymalizacja wydajnosci.",
+    "green": ["Slow aplikacje", "Bottleneck investigation", "Load issues"],
+    "red": ["Nowe features", "Security", "Documentation"]
+  },
+  "startup": {
+    "name": "Startup MVP",
+    "mid": "Orkiestrator + analyst + researcher + builder + QA. Kompletny MVP.",
+    "green": ["Pierwsze MVP", "Nowe produkty", "Szybka walidacja"],
+    "red": ["Enterprise migration", "Legacy refactor", "Compliance-heavy"]
+  },
+  "five_minds": {
+    "name": "Five Minds Protocol",
+    "mid": "4 ekspertow + Devils Advocate. Structured debate z perspektywami.",
+    "green": ["Krytyczne decyzje", "Architecture wybory", "Strategic tradeoffs"],
+    "red": ["Szybkie zadania", "Jasne wymagania", "Maly budzet"]
+  },
+  "deep_five_minds": {
+    "name": "Deep Five Minds Ultimate",
+    "mid": "Deep Research + podwojna debata Five Minds. 24 agentow, 5 punktow HITL.",
+    "green": ["Krytyczne decyzje arch", "Wysokie ryzyko projekty", "Najlepsza mozliwa analiza"],
+    "red": ["Szybkie zadania", "Maly budzet", "Jasne wymagania"]
+  },
+  "full": {
+    "name": "Full Hierarchy",
+    "mid": "5-warstwowa hierarchia. Gold Standard pipeline.",
+    "green": ["Kompleksowe projekty", "Enterprise grade", "Pelen cykl zycia"],
+    "red": ["Proste zadania", "Maly budzet", "Szybkie fixy"]
+  },
+  "deep": {
+    "name": "Deep Research+Build",
+    "mid": "6 researchers + critic + synthesizer + 4 build + 3 QA.",
+    "green": ["Gleboki research", "Nowe domeny", "Dokumentacja przed budowa"],
+    "red": ["Szybkie iteracje", "Bez researchu", "Maly budzet"]
+  },
+  "security": {
+    "name": "Security Hardening",
+    "mid": "Builder + 3x QA + Manager GO/NO-GO. Zabezpieczanie aplikacji.",
+    "green": ["Security audit", "OWASP compliance", "Pre-launch security"],
+    "red": ["Nowe features", "Performance", "Documentation only"]
+  },
+  "microservices": {
+    "name": "Microservices",
+    "mid": "Planning + 4x build + 3x QA. Budowanie mikroserwisow.",
+    "green": ["Microservices arch", "Service decomposition", "API design"],
+    "red": ["Monolith refactor", "Simple apps", "Tight deadlines"]
+  }
+}

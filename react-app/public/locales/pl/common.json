@@ -1,0 +1,141 @@
+{
+  "nav": {
+    "agents": "Agenci",
+    "presets": "Presety",
+    "saved": "Zapisane"
+  },
+  "canvas": {
+    "clear": "Wyczysc",
+    "connect": "Polacz",
+    "autoConnect": "Auto-polacz",
+    "addAgent": "Dodaj agenta",
+    "delete": "Usun",
+    "selectAll": "Zaznacz wszystko",
+    "clearSelection": "Odznacz",
+    "hint": "Przeciagnij agenta na canvas"
+  },
+  "simulation": {
+    "start": "Symulacja",
+    "stop": "Stop",
+    "pause": "Pauza",
+    "resume": "Wznow",
+    "complete": "Pipeline Complete!",
+    "phase": "Faza",
+    "step": "Krok",
+    "agents": "Agentow aktywnych",
+    "elapsed": "Czas"
+  },
+  "cost": {
+    "title": "KOSZT",
+    "center": "Cost Command Center",
+    "overview": "Przeglad",
+    "breakdown": "Szczegoly",
+    "whatif": "What-If",
+    "export": "Eksport",
+    "context": "Kontekst",
+    "p50": "p50 (typowy)",
+    "p90": "p90 (pesymistyczny)",
+    "totalAgents": "Agentow",
+    "tokIn": "Tok In",
+    "tokOut": "Tok Out",
+    "cached": "Cached",
+    "modelMix": "Rozklad modeli",
+    "perAgent": "Koszt per agent",
+    "perPhase": "Rozklad kosztow na fazy",
+    "severity": {
+      "safe": "Bezpieczny",
+      "warn": "Uwaga",
+      "high": "Wysoki",
+      "danger": "Krytyczny"
+    }
+  },
+  "context": {
+    "title": "CTX MAX",
+    "heaviest": "Najciezszy agent",
+    "overTarget": "Powyzej celu 50%",
+    "avgUsage": "Srednie wykorzystanie",
+    "baseline": "Bazowy narzut",
+    "target": "Cel premium",
+    "isolated": "Subagenci sa izolowani"
+  },
+  "sidebar": {
+    "agentDetails": "Szczegoly agenta",
+    "presetDetails": "Szczegoly presetu",
+    "tools": "NARZEDZIA",
+    "model": "MODEL",
+    "phase": "FAZA",
+    "role": "ROLA",
+    "whatItDoes": "CO ROBI",
+    "whatItDoesNot": "CZEGO NIE ROBI",
+    "antiPatterns": "ANTI-PATTERNS",
+    "facts": "CIEKAWOSTKI",
+    "prompt": "PROMPT",
+    "showPrompt": "Pokaz prompt",
+    "whenToUse": "KIEDY UZYWAC",
+    "whenNotToUse": "KIEDY NIE UZYWAC",
+    "detailed": "SZCZEGOLOWY OPIS",
+    "similar": "PODOBNI AGENCI"
+  },
+  "model": {
+    "opus": "Opus 4.6",
+    "sonnet": "Sonnet 4.6",
+    "haiku": "Haiku 4.5",
+    "ctx": "ctx",
+    "input": "wejscie",
+    "output": "wyjscie"
+  },
+  "phase": {
+    "strategy": "Strategia",
+    "research": "Research",
+    "debate1": "Debata #1",
+    "debate2": "Debata #2",
+    "build": "Build",
+    "qa": "QA",
+    "hitl": "HITL"
+  },
+  "actions": {
+    "save": "Zapisz",
+    "load": "Zaladuj",
+    "export": "Eksportuj",
+    "import": "Importuj",
+    "copy": "Kopiuj",
+    "delete": "Usun",
+    "cancel": "Anuluj",
+    "confirm": "Potwierdz",
+    "close": "Zamknij",
+    "open": "Otworz",
+    "edit": "Edytuj",
+    "clone": "Klonuj",
+    "create": "Stworz"
+  },
+  "mermaid": {
+    "title": "Mermaid Export",
+    "copy": "Kopiuj do schowka",
+    "copied": "Skopiowano!",
+    "hint": "Wklej do mermaid.live lub Obsidian"
+  },
+  "creator": {
+    "title": "Kreator Agenta",
+    "name": "Nazwa",
+    "phase": "Faza",
+    "model": "Model",
+    "color": "Kolor",
+    "icon": "Ikona",
+    "role": "Rola",
+    "tools": "Narzedzia",
+    "prompt": "Prompt",
+    "save": "Zapisz agenta",
+    "preview": "Podglad",
+    "score": "Jakosc prompta",
+    "wizard": "Kreator",
+    "form": "Formularz"
+  },
+  "keyboard": {
+    "shortcuts": "Skroty klawiaturowe",
+    "m": "M = Monitor",
+    "k": "K = Koszt",
+    "escape": "Esc = Zamknij",
+    "space": "Spacja = Symulacja",
+    "del": "Del = Usun zaznaczone"
+  }
+}
