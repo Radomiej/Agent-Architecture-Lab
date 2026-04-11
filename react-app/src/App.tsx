@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react'
+import { Suspense } from 'react'
 import './styles/tokens.css'
 import './styles/animations.css'
 import { useTheme } from './hooks/useTheme'
