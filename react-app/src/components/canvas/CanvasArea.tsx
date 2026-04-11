@@ -57,7 +57,7 @@ export const CanvasArea: React.FC = () => {
       const mh = Math.abs(cy - marqueeStart.current.y)
       setMarquee({ x: mx, y: my, w: mw, h: mh })
     }
-  }, [panning, dragging, zoom, moveNode, snap, setPan, pan])
+  }, [panning, dragging, zoom, moveNode, setPan, pan])
 
   const handleMouseUp = useCallback(() => {
     if (marquee && marqueeStart.current) {
@@ -89,7 +89,7 @@ export const CanvasArea: React.FC = () => {
     const y = snap((e.clientY - rect.top - pan.y) / zoom)
     const id = `${agentId}-${Date.now()}`
     addNode({ id, agentId, x, y, connections: [] })
-  }, [addNode, pan, zoom, snap])
+  }, [addNode, pan, zoom])
 
   return (
     <main
