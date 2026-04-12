@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { useUiStore } from '../../store/uiStore'
 import { useCanvasStore } from '../../store/canvasStore'
 
@@ -7,6 +8,7 @@ import { useCanvasStore } from '../../store/canvasStore'
  * Provides access to left/right sidebars and main actions.
  */
 export const MobileNav: React.FC = () => {
+  const { t } = useTranslation()
   const { setLeftDrawer, setRightDrawer, leftDrawerOpen, rightDrawerOpen, openModal } = useUiStore()
   const nodes = useCanvasStore((s) => s.nodes)
 
@@ -21,30 +23,30 @@ export const MobileNav: React.FC = () => {
       aria-label="Mobile navigation"
     >
       <MobileNavBtn
-        label="Agenci"
+        label={t('nav.agents', 'Agenci')}
         icon="☰"
         active={leftDrawerOpen}
         onClick={() => { setLeftDrawer(!leftDrawerOpen); setRightDrawer(false) }}
       />
       <MobileNavBtn
-        label="Canvas"
+        label={t('nav.canvas', 'Canvas')}
         icon="⬡"
         onClick={() => { setLeftDrawer(false); setRightDrawer(false) }}
       />
       {nodes.length > 0 && (
         <MobileNavBtn
-          label="Koszt"
+          label={t('nav.cost', 'Koszt')}
           icon="$"
           onClick={() => openModal('cost')}
         />
       )}
       <MobileNavBtn
-        label="Eksport"
-        icon="⬡"
+        label={t('nav.export', 'Eksport')}
+        icon="↗"
         onClick={() => openModal('mermaid')}
       />
       <MobileNavBtn
-        label="Szczegóły"
+        label={t('nav.details', 'Szczegóły')}
         icon="ℹ"
         active={rightDrawerOpen}
         onClick={() => { setRightDrawer(!rightDrawerOpen); setLeftDrawer(false) }}
@@ -74,3 +76,4 @@ const MobileNavBtn: React.FC<{
     <span>{label}</span>
   </button>
 )
+

@@ -1,6 +1,7 @@
 import { clsx, type ClassValue } from 'clsx'
+import { twMerge } from 'tailwind-merge'
 
-/** Merge Tailwind class strings conditionally. */
+/** Merge Tailwind class strings conditionally, handling conflicts properly. */
 export function cn(...inputs: ClassValue[]): string {
-  return clsx(inputs)
+  return twMerge(clsx(inputs))
 }
