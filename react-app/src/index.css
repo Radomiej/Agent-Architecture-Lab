@@ -37,6 +37,7 @@
 
   --color-border: var(--border);
   --color-state-hover: var(--state-hover);
+  --color-state-focus: var(--state-focus);
   --color-state-selected: var(--state-selected);
 
   --font-sans: var(--ff-sans);
@@ -76,6 +77,29 @@ body {
 :focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
+}
+
+/* sr-only / not-sr-only utilities (Tailwind v4 compatibility) */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+.not-sr-only {
+  position: static;
+  width: auto;
+  height: auto;
+  padding: 0;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
 }
 
 /* DaisyUI button override to match our dark glass style */

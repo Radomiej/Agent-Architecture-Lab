@@ -2,7 +2,11 @@
   "nav": {
     "agents": "Agenci",
     "presets": "Presety",
-    "saved": "Zapisane"
+    "saved": "Zapisane",
+    "canvas": "Canvas",
+    "export": "Eksport",
+    "details": "Szczegóły",
+    "cost": "Koszt"
   },
   "canvas": {
     "clear": "Wyczysc",
