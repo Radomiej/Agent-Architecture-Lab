@@ -168,12 +168,46 @@ export interface CtxResult {
   pct: number
 }
 
+export type LLMProvider = 'cometapi' | 'openrouter'
+
 export interface LLMConfig {
+  provider: LLMProvider
   apiKey: string
   baseUrl: string
   modelMap: Record<ModelType, string>
   debugMode: boolean
 }
+
+// ─── Web Search Tool (separate concept from LLM provider) ─────────────────────
+export type WebSearchProvider = 'perplexity' | 'openrouter'
+
+export const SONAR_MODELS = [
+  { id: 'sonar',               label: 'Sonar — fast, real-time web search' },
+  { id: 'sonar-pro',           label: 'Sonar Pro — deeper multi-step search' },
+  { id: 'sonar-reasoning',     label: 'Sonar Reasoning — chain-of-thought + web' },
+  { id: 'sonar-deep-research', label: 'Sonar Deep Research — comprehensive (slow)' },
+] as const
+
+export type SonarModelId = typeof SONAR_MODELS[number]['id']
+
+export interface WebSearchConfig {
+  /** Whether web search tool is active */
+  enabled: boolean
+  /** Perplexity direct API or OpenRouter routing to Perplexity */
+  provider: WebSearchProvider
+  /** API key — pplx-… for Perplexity, sk-or-… for OpenRouter */
+  apiKey: string
+  /** Sonar model to use */
+  model: SonarModelId
+}
+
+export const DEFAULT_WEB_SEARCH_CONFIG: WebSearchConfig = {
+  enabled: false,
+  provider: 'perplexity',
+  apiKey: '',
+  model: 'sonar-pro',
+}
+
 
 export type LLMCallStatus = 'pending' | 'streaming' | 'done' | 'error'
 

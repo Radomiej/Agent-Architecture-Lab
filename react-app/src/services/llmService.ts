@@ -1,10 +1,34 @@
-import type { ModelType } from '../types'
+import type { ModelType, WebSearchConfig, SonarModelId } from '../types'
 
-/** Default model IDs used when no override is configured */
+// ─── Provider constants ────────────────────────────────────────────────────────
+
+export const COMETAPI_BASE_URL = 'https://api.cometapi.com/v1'
+export const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1'
+export const PERPLEXITY_BASE_URL = 'https://api.perplexity.ai'
+
+/** OpenRouter requires these headers for attribution */
+const OPENROUTER_HEADERS = {
+  'HTTP-Referer': 'https://radomiej.github.io/Agent-Architecture-Lab/',
+  'X-Title': 'Agent Architecture Designer',
+}
+
+/** Default model IDs for CometAPI */
 export const DEFAULT_MODEL_MAP: Record<ModelType, string> = {
   opus: 'claude-opus-4-5',
   sonnet: 'claude-sonnet-4-5',
   haiku: 'claude-haiku-4-5',
+}
+
+/** Default model IDs for OpenRouter (same models, different namespace) */
+export const OPENROUTER_DEFAULT_MODEL_MAP: Record<ModelType, string> = {
+  opus: 'anthropic/claude-opus-4-5',
+  sonnet: 'anthropic/claude-sonnet-4-5',
+  haiku: 'anthropic/claude-haiku-4-5',
+}
+
+/** Resolve model ID for a given OpenRouter Sonar model */
+export function resolveOpenRouterSonarId(model: SonarModelId): string {
+  return `perplexity/${model}`
 }
 
 export interface LLMUsage {
@@ -46,7 +70,7 @@ export async function callAgent(opts: LLMCallOptions): Promise<LLMResult> {
     userMessage,
     model,
     apiKey,
-    baseUrl = 'https://api.cometapi.com/v1',
+    baseUrl = COMETAPI_BASE_URL,
     modelMap = DEFAULT_MODEL_MAP,
     onChunk,
     signal,
@@ -56,12 +80,16 @@ export async function callAgent(opts: LLMCallOptions): Promise<LLMResult> {
   const url = `${baseUrl.replace(/\/$/, '')}/chat/completions`
   const startMs = Date.now()
 
+  // Inject OpenRouter attribution headers when routing through openrouter.ai
+  const extraHeaders = baseUrl.includes('openrouter.ai') ? OPENROUTER_HEADERS : {}
+
   try {
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
+        ...extraHeaders,
       },
       body: JSON.stringify({
         model: modelId,
@@ -166,11 +194,12 @@ export async function callAgent(opts: LLMCallOptions): Promise<LLMResult> {
  */
 export async function testConnection(
   apiKey: string,
-  baseUrl = 'https://api.cometapi.com/v1',
+  baseUrl = COMETAPI_BASE_URL,
 ): Promise<{ ok: boolean; error?: string }> {
+  const extra = baseUrl.includes('openrouter.ai') ? OPENROUTER_HEADERS : {}
   try {
     const response = await fetch(`${baseUrl.replace(/\/$/, '')}/models`, {
-      headers: { Authorization: `Bearer ${apiKey}` },
+      headers: { Authorization: `Bearer ${apiKey}`, ...extra },
       signal: AbortSignal.timeout(8000),
     })
     if (!response.ok) {
@@ -181,4 +210,67 @@ export async function testConnection(
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : String(err) }
   }
+}
+
+// ─── Web Search Tool ───────────────────────────────────────────────────────────
+
+export interface WebSearchCallOptions {
+  query: string
+  config: WebSearchConfig
+  /** Called with each streamed text chunk */
+  onChunk?: (chunk: string) => void
+  signal?: AbortSignal
+}
+
+/**
+ * Call the Web Search tool via Perplexity (direct) or OpenRouter (Sonar).
+ * Uses the Sonar model configured in WebSearchConfig.
+ * Never throws — errors returned as ok:false.
+ */
+export async function callWebSearch(opts: WebSearchCallOptions): Promise<LLMResult> {
+  const { query, config, onChunk, signal } = opts
+
+  if (!config.enabled || !config.apiKey) {
+    return { ok: false, text: '', error: 'Web search is not enabled or API key is missing', latencyMs: 0 }
+  }
+
+  let baseUrl: string
+  let modelId: string
+
+  if (config.provider === 'openrouter') {
+    baseUrl = OPENROUTER_BASE_URL
+    modelId = resolveOpenRouterSonarId(config.model)
+  } else {
+    // Perplexity direct
+    baseUrl = PERPLEXITY_BASE_URL
+    modelId = config.model
+  }
+
+  // Reuse callAgent's streaming/non-streaming logic by forwarding to fetch directly
+  return callAgent({
+    agentId: '__web_search__',
+    systemPrompt: 'You are a helpful web search assistant. Search the web for up-to-date information and provide a concise, accurate answer with sources.',
+    userMessage: query,
+    model: 'sonnet', // tier doesn't matter here; we override via modelMap below
+    apiKey: config.apiKey,
+    baseUrl,
+    modelMap: { opus: modelId, sonnet: modelId, haiku: modelId },
+    onChunk,
+    signal,
+  })
+}
+
+/**
+ * Test the Web Search tool connection.
+ */
+export async function testWebSearchConnection(
+  config: Pick<WebSearchConfig, 'provider' | 'apiKey'>,
+): Promise<{ ok: boolean; error?: string }> {
+  if (!config.apiKey) return { ok: false, error: 'No API key provided' }
+
+  if (config.provider === 'openrouter') {
+    return testConnection(config.apiKey, OPENROUTER_BASE_URL)
+  }
+  // Perplexity: /models endpoint
+  return testConnection(config.apiKey, PERPLEXITY_BASE_URL)
 }
