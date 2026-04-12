@@ -163,4 +163,19 @@ test.describe('Canvas interactions', () => {
     await page.getByRole('button', { name: /Stop/i }).click()
     await expect(page.getByRole('button', { name: /Symulacja/i })).toBeVisible()
   })
+
+  test('Solo scenario simulation shows dialog timeline processing messages', async ({ page }) => {
+    const sidebar = page.getByRole('complementary', { name: 'Left sidebar' })
+    await sidebar.getByRole('tab', { name: 'Presety' }).click()
+    await sidebar.getByRole('button', { name: 'Solo' }).click()
+
+    await page.getByRole('button', { name: /Symulacja/i }).click()
+
+    const timeline = page.getByLabel('Dialog Timeline')
+    await expect(timeline).toBeVisible()
+    await expect(timeline.getByText(/Przetwarzam etap/).first()).toBeVisible()
+
+    await page.getByRole('button', { name: /Stop/i }).click()
+    await expect(page.getByRole('button', { name: /Symulacja/i })).toBeVisible()
+  })
 })
