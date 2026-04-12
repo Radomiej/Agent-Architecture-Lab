@@ -47,13 +47,19 @@ export const MermaidModal: React.FC = () => {
     return lines.join('\n')
   }, [nodes, connections])
 
+  const textareaRef = React.useRef<HTMLTextAreaElement>(null)
+
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(diagram)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
-      // fallback: select textarea
+      // Fallback: select the textarea so the user can copy manually
+      if (textareaRef.current) {
+        textareaRef.current.focus()
+        textareaRef.current.select()
+      }
     }
   }
 
@@ -84,6 +90,7 @@ export const MermaidModal: React.FC = () => {
             </div>
 
             <textarea
+              ref={textareaRef}
               readOnly
               value={diagram}
               rows={Math.min(24, diagram.split('\n').length + 2)}
