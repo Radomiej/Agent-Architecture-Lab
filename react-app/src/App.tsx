@@ -8,13 +8,17 @@ import { RightSidebar } from './components/layout/RightSidebar'
 import { CanvasArea } from './components/canvas/CanvasArea'
 import { CostModal } from './components/modals/CostModal'
 import { MermaidModal } from './components/modals/MermaidModal'
+import { LLMSettingsModal } from './components/modals/LLMSettingsModal'
+import { DebugPanel } from './components/debug/DebugPanel'
 import { useUiStore } from './store/uiStore'
 import { useCanvasStore } from './store/canvasStore'
+import { useSimulationStore } from './store/simulationStore'
 
 function AppLayout() {
   useTheme()
   const { openModal, activeModal, closeModal } = useUiStore()
   const { selected, removeNode } = useCanvasStore()
+  const { toggleDebugPanel } = useSimulationStore()
 
   // Global keyboard shortcuts
   useEffect(() => {
@@ -28,6 +32,8 @@ function AppLayout() {
 
       if (e.key === 'k' || e.key === 'K') { openModal('cost'); return }
       if (e.key === 'm' || e.key === 'M') { openModal('mermaid'); return }
+      if (e.key === ',') { openModal('settings'); return }
+      if (e.key === 'd' || e.key === 'D') { toggleDebugPanel(); return }
 
       // Delete only (not Backspace - avoid conflicting with browser back navigation)
       if (e.key === 'Delete' && selected.length > 0) {
@@ -37,7 +43,7 @@ function AppLayout() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [openModal, closeModal, activeModal, selected, removeNode])
+  }, [openModal, closeModal, activeModal, selected, removeNode, toggleDebugPanel])
 
   return (
     <div
@@ -79,6 +85,10 @@ function AppLayout() {
       {/* Modals */}
       <CostModal />
       <MermaidModal />
+      <LLMSettingsModal />
+
+      {/* Debug panel (fixed bottom drawer) */}
+      <DebugPanel />
     </div>
   )
 }

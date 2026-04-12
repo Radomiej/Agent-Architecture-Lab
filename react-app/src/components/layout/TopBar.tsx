@@ -4,14 +4,16 @@ import { useUiStore } from '../../store/uiStore'
 import { useSimulationStore } from '../../store/simulationStore'
 import { useCanvasStore } from '../../store/canvasStore'
 import { useCostStore } from '../../store/costStore'
+import { useLLMStore } from '../../store/llmStore'
 
 export const TopBar: React.FC = () => {
   const { t } = useTranslation()
   const { theme, toggleTheme, lang, toggleLang, openModal } = useUiStore()
-  const { isRunning, start, stop } = useSimulationStore()
+  const { isRunning, start, stop, debugPanelOpen, toggleDebugPanel } = useSimulationStore()
   const nodes = useCanvasStore((s) => s.nodes)
   const getCostSummary = useCostStore((s) => s.getCostSummary)
   const getContextSummary = useCostStore((s) => s.getContextSummary)
+  const { debugMode, apiKey } = useLLMStore()
 
   const cost = getCostSummary(nodes)
   const ctx = getContextSummary(nodes)
@@ -47,6 +49,11 @@ export const TopBar: React.FC = () => {
         <span style={{ fontSize: '11px', padding: '1px 6px', borderRadius: '4px', background: 'rgba(167,139,250,0.15)', color: '#A78BFA', fontWeight: 600 }}>
           v32.16
         </span>
+        {apiKey && (
+          <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: '4px', background: 'rgba(52,211,153,0.12)', color: '#34D399', fontWeight: 600 }}>
+            LLM ✓
+          </span>
+        )}
       </div>
 
       {/* Cost HUD */}
@@ -75,10 +82,21 @@ export const TopBar: React.FC = () => {
 
       <div style={{ flex: 1 }} />
 
-      {/* Keyboard shortcuts hint */}
-      <span style={{ fontSize: '11px', color: 'var(--t4)', display: 'none' }}>
-        M=Monitor K=Cost
-      </span>
+      {/* Debug panel toggle — visible only when debugMode is on */}
+      {debugMode && (
+        <button
+          onClick={toggleDebugPanel}
+          aria-label="Toggle LLM Debug Panel"
+          title="Toggle LLM Debug Panel (D)"
+          style={{
+            ...iconBtnStyle,
+            background: debugPanelOpen ? 'rgba(251,191,36,0.15)' : 'none',
+            color: debugPanelOpen ? '#FBBF24' : 'var(--t3)',
+          }}
+        >
+          🐛
+        </button>
+      )}
 
       {/* Mermaid Export */}
       <button
@@ -88,6 +106,16 @@ export const TopBar: React.FC = () => {
         aria-label="Export Mermaid diagram"
       >
         ⬡
+      </button>
+
+      {/* Settings */}
+      <button
+        onClick={() => openModal('settings')}
+        title="LLM Settings (,)"
+        aria-label="LLM Settings"
+        style={iconBtnStyle}
+      >
+        ⚙
       </button>
 
       {/* Sim toggle */}
