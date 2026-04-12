@@ -70,7 +70,7 @@ test.describe('LLM Settings Modal', () => {
   test('debug mode checkbox is present', async ({ page }) => {
     await page.getByRole('button', { name: /LLM Settings/i }).click()
     const dialog = page.getByRole('dialog', { name: /LLM Settings/i })
-    await expect(dialog.getByRole('checkbox')).toBeVisible()
+    await expect(dialog.getByRole('checkbox', { name: /Debug Mode/i })).toBeVisible()
   })
 
   test('LLM badge appears in header after saving a key', async ({ page }) => {
