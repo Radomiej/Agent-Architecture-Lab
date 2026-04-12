@@ -99,7 +99,7 @@ export const DecisionGateModal: React.FC = () => {
                 HITL Decision Gate
               </h2>
               <p style={{ margin: 0, fontSize: '12px', color: 'var(--t3)' }}>
-                Decision Presenter — choose how to proceed
+                Decision Presenter — wybierz jak kontynuować
               </p>
             </div>
           </div>
@@ -123,8 +123,8 @@ export const DecisionGateModal: React.FC = () => {
         {/* Body */}
         <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <p style={{ margin: 0, fontSize: '13px', color: 'var(--t2)', lineHeight: 1.5 }}>
-            The simulation has reached a decision point. Select one of the options below to
-            determine how the agent team should continue.
+            Symulacja osiągnęła punkt decyzyjny. Wybierz jedną z opcji poniżej,
+            aby określić jak zespół agentów powinien kontynuować.
           </p>
 
           {HITL_GATE_OPTIONS.map((opt) => (

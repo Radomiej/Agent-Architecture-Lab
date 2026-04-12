@@ -225,4 +225,4 @@ export const useSimulationStore = create<SimulationStore>((set, get) => {
 
     set((s) => ({ activeAgents: s.activeAgents.filter((id) => id !== nodeId) }))
   },
-}}))
+}})
