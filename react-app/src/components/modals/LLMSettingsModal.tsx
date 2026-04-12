@@ -1,8 +1,9 @@
 import React, { useState } from 'react'
 import { useUiStore } from '../../store/uiStore'
 import { useLLMStore } from '../../store/llmStore'
-import { testConnection } from '../../services/llmService'
-import type { ModelType } from '../../types'
+import { testConnection, testWebSearchConnection, COMETAPI_BASE_URL, OPENROUTER_BASE_URL } from '../../services/llmService'
+import type { ModelType, LLMProvider, WebSearchProvider, SonarModelId } from '../../types'
+import { SONAR_MODELS } from '../../types'
 import { ModalBase } from './ModalBase'
 
 const MODEL_TIERS: ModelType[] = ['opus', 'sonnet', 'haiku']
@@ -14,146 +15,328 @@ const TIER_LABELS: Record<ModelType, string> = {
 
 const MODAL_ID = 'settings'
 
+// Quick-pick model presets shown as chips under model inputs
+const MODEL_PRESETS: Record<LLMProvider, Partial<Record<ModelType, string[]>>> = {
+  cometapi: {
+    opus:   ['claude-opus-4-5'],
+    sonnet: ['claude-sonnet-4-5'],
+    haiku:  ['claude-haiku-4-5'],
+  },
+  openrouter: {
+    opus:   ['anthropic/claude-opus-4-5', 'openai/gpt-4o', 'google/gemini-2.5-pro'],
+    sonnet: ['anthropic/claude-sonnet-4-5', 'openai/gpt-4o-mini', 'mistralai/mistral-large'],
+    haiku:  ['anthropic/claude-haiku-4-5', 'openai/gpt-4.1-mini', 'mistralai/mistral-small'],
+  },
+}
+
+type TestState = 'idle' | 'testing' | 'ok' | 'error'
+
 const LLMSettingsContent: React.FC = () => {
   const { closeModal } = useUiStore()
   const llm = useLLMStore()
 
+  // ── LLM Provider state ──────────────────────────────────────────────────────
+  const [provider, setProviderDraft] = useState<LLMProvider>(llm.provider)
   const [apiKeyDraft, setApiKeyDraft] = useState(llm.apiKey)
   const [baseUrlDraft, setBaseUrlDraft] = useState(llm.baseUrl)
   const [modelMapDraft, setModelMapDraft] = useState({ ...llm.modelMap })
   const [debugDraft, setDebugDraft] = useState(llm.debugMode)
   const [showKey, setShowKey] = useState(false)
-  const [testState, setTestState] = useState<'idle' | 'testing' | 'ok' | 'error'>('idle')
+  const [testState, setTestState] = useState<TestState>('idle')
   const [testError, setTestError] = useState('')
 
+  // ── Web Search Tool state ───────────────────────────────────────────────────
+  const [wsEnabled, setWsEnabled] = useState(llm.webSearch.enabled)
+  const [wsProvider, setWsProvider] = useState<WebSearchProvider>(llm.webSearch.provider)
+  const [wsKey, setWsKey] = useState(llm.webSearch.apiKey)
+  const [wsModel, setWsModel] = useState<SonarModelId>(llm.webSearch.model)
+  const [showWsKey, setShowWsKey] = useState(false)
+  const [wsTestState, setWsTestState] = useState<TestState>('idle')
+  const [wsTestError, setWsTestError] = useState('')
+
+  // ── Handlers ────────────────────────────────────────────────────────────────
+
+  const handleProviderChange = (p: LLMProvider) => {
+    setProviderDraft(p)
+    setBaseUrlDraft(p === 'openrouter' ? OPENROUTER_BASE_URL : COMETAPI_BASE_URL)
+    // Reset model map to provider defaults (user can still override)
+    setModelMapDraft(
+      p === 'openrouter'
+        ? { opus: 'anthropic/claude-opus-4-5', sonnet: 'anthropic/claude-sonnet-4-5', haiku: 'anthropic/claude-haiku-4-5' }
+        : { opus: 'claude-opus-4-5', sonnet: 'claude-sonnet-4-5', haiku: 'claude-haiku-4-5' }
+    )
+    setTestState('idle')
+  }
+
   const handleSave = () => {
-    llm.setConfig({
-      apiKey: apiKeyDraft,
-      baseUrl: baseUrlDraft,
-      modelMap: modelMapDraft,
-      debugMode: debugDraft,
-    })
+    llm.setConfig({ provider, apiKey: apiKeyDraft, baseUrl: baseUrlDraft, modelMap: modelMapDraft, debugMode: debugDraft })
+    llm.setWebSearch({ enabled: wsEnabled, provider: wsProvider, apiKey: wsKey, model: wsModel })
     closeModal()
   }
 
   const handleTest = async () => {
-    setTestState('testing')
-    setTestError('')
+    setTestState('testing'); setTestError('')
     const result = await testConnection(apiKeyDraft, baseUrlDraft)
-    if (result.ok) {
-      setTestState('ok')
-    } else {
-      setTestState('error')
-      setTestError(result.error ?? 'Unknown error')
-    }
+    setTestState(result.ok ? 'ok' : 'error')
+    if (!result.ok) setTestError(result.error ?? 'Unknown error')
   }
 
-  const testLabel = testState === 'testing' ? '⏳ Testing…'
-    : testState === 'ok' ? '✓ Connected'
-    : testState === 'error' ? '✗ Failed'
-    : 'Test Connection'
+  const handleWsTest = async () => {
+    setWsTestState('testing'); setWsTestError('')
+    const result = await testWebSearchConnection({ provider: wsProvider, apiKey: wsKey })
+    setWsTestState(result.ok ? 'ok' : 'error')
+    if (!result.ok) setWsTestError(result.error ?? 'Unknown error')
+  }
+
+  const testLabel = (s: TestState) =>
+    s === 'testing' ? '⏳ Testing…' : s === 'ok' ? '✓ Connected' : s === 'error' ? '✗ Failed' : 'Test Connection'
+
+  const testBtnStyle = (s: TestState): React.CSSProperties => ({
+    ...btnStyle,
+    background: s === 'ok' ? 'rgba(52,211,153,0.15)' : s === 'error' ? 'rgba(248,113,113,0.15)' : 'var(--bg-card)',
+    color: s === 'ok' ? '#34D399' : s === 'error' ? '#F87171' : 'var(--t2)',
+    border: `1px solid ${s === 'ok' ? 'rgba(52,211,153,0.3)' : s === 'error' ? 'rgba(248,113,113,0.3)' : 'var(--border)'}`,
+    cursor: s === 'testing' ? 'not-allowed' : 'pointer',
+  })
 
   return (
-    <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
-      {/* API Key */}
-      <section>
+      {/* ═══════════════════════════════════════════════════════════════════════
+          SECTION 1 — LLM Provider
+          ═══════════════════════════════════════════════════════════════════════ */}
+      <div style={sectionBoxStyle}>
+        <div style={sectionTitleStyle}>🤖 LLM Provider — for agents</div>
+
+        {/* Provider selector */}
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+          {(['cometapi', 'openrouter'] as LLMProvider[]).map((p) => (
+            <button
+              key={p}
+              type="button"
+              onClick={() => handleProviderChange(p)}
+              style={{
+                ...providerBtnStyle,
+                background: provider === p ? 'rgba(167,139,250,0.18)' : 'var(--bg-card)',
+                border: `1px solid ${provider === p ? '#A78BFA' : 'var(--border)'}`,
+                color: provider === p ? '#A78BFA' : 'var(--t2)',
+                fontWeight: provider === p ? 700 : 400,
+              }}
+            >
+              {p === 'cometapi' ? '☄️ CometAPI' : '🔀 OpenRouter'}
+            </button>
+          ))}
+        </div>
+
+        {provider === 'openrouter' && (
+          <p style={{ ...hintStyle, marginBottom: '12px', color: 'var(--t3)' }}>
+            OpenRouter routes to 300+ models. Key format: <code>sk-or-…</code>
+            {' — '}
+            <a href="https://openrouter.ai/keys" target="_blank" rel="noreferrer" style={{ color: '#A78BFA' }}>Get key ↗</a>
+          </p>
+        )}
+        {provider === 'cometapi' && (
+          <p style={{ ...hintStyle, marginBottom: '12px', color: 'var(--t3)' }}>
+            CometAPI aggregates Claude models. Key format: <code>sk-…</code>
+            {' — '}
+            <a href="https://cometapi.com" target="_blank" rel="noreferrer" style={{ color: '#A78BFA' }}>Get key ↗</a>
+          </p>
+        )}
+
+        {/* API Key */}
         <label style={labelStyle}>API Key</label>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '12px' }}>
           <input
             type={showKey ? 'text' : 'password'}
             value={apiKeyDraft}
             onChange={(e) => { setApiKeyDraft(e.target.value); setTestState('idle') }}
-            placeholder="sk-…"
+            placeholder={provider === 'openrouter' ? 'sk-or-…' : 'sk-…'}
             aria-label="CometAPI key"
             style={inputStyle}
           />
-          <button
-            type="button"
-            onClick={() => setShowKey((v) => !v)}
-            style={iconBtnStyle}
-            aria-label={showKey ? 'Hide key' : 'Show key'}
-          >
+          <button type="button" onClick={() => setShowKey((v) => !v)} style={iconBtnStyle} aria-label={showKey ? 'Hide key' : 'Show key'}>
             {showKey ? '🙈' : '👁'}
           </button>
         </div>
-        <p style={hintStyle}>
-          Your key is stored only in browser localStorage — never sent anywhere except CometAPI.
-        </p>
-      </section>
 
-      {/* Base URL */}
-      <section>
+        {/* Base URL */}
         <label style={labelStyle}>Base URL</label>
         <input
           type="url"
           value={baseUrlDraft}
           onChange={(e) => { setBaseUrlDraft(e.target.value); setTestState('idle') }}
           aria-label="CometAPI base URL"
-          style={inputStyle}
+          style={{ ...inputStyle, marginBottom: '16px' }}
         />
-      </section>
 
-      {/* Model Map */}
-      <section>
+        {/* Model Map */}
         <label style={labelStyle}>Model IDs per tier</label>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
           {MODEL_TIERS.map((tier) => (
-            <div key={tier} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ width: '200px', fontSize: '12px', color: 'var(--t2)', flexShrink: 0 }}>
-                {TIER_LABELS[tier]}
-              </span>
-              <input
-                type="text"
-                value={modelMapDraft[tier]}
-                onChange={(e) => setModelMapDraft((m) => ({ ...m, [tier]: e.target.value }))}
-                aria-label={`Model ID for ${tier}`}
-                style={{ ...inputStyle, flex: 1 }}
-              />
+            <div key={tier}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ width: '185px', fontSize: '12px', color: 'var(--t2)', flexShrink: 0 }}>
+                  {TIER_LABELS[tier]}
+                </span>
+                <input
+                  type="text"
+                  value={modelMapDraft[tier]}
+                  onChange={(e) => setModelMapDraft((m) => ({ ...m, [tier]: e.target.value }))}
+                  aria-label={`Model ID for ${tier}`}
+                  style={{ ...inputStyle, flex: 1 }}
+                />
+              </div>
+              {/* Quick-pick chips */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px', paddingLeft: '195px' }}>
+                {(MODEL_PRESETS[provider][tier] ?? []).map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => setModelMapDraft((m) => ({ ...m, [tier]: preset }))}
+                    style={{
+                      fontSize: '10px', padding: '2px 6px', borderRadius: '4px', cursor: 'pointer',
+                      background: modelMapDraft[tier] === preset ? 'rgba(167,139,250,0.2)' : 'var(--bg-input)',
+                      border: `1px solid ${modelMapDraft[tier] === preset ? '#A78BFA' : 'var(--border)'}`,
+                      color: modelMapDraft[tier] === preset ? '#A78BFA' : 'var(--t4)',
+                    }}
+                  >
+                    {preset}
+                  </button>
+                ))}
+              </div>
             </div>
           ))}
         </div>
-      </section>
 
-      {/* Debug Mode */}
-      <section>
-        <label style={{ ...labelStyle, display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-          <input
-            type="checkbox"
-            checked={debugDraft}
-            onChange={(e) => setDebugDraft(e.target.checked)}
-            style={{ width: '16px', height: '16px', cursor: 'pointer' }}
-          />
+        {/* Debug Mode */}
+        <label style={{ ...labelStyle, display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', marginBottom: '0' }}>
+          <input type="checkbox" checked={debugDraft} onChange={(e) => setDebugDraft(e.target.checked)} style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
           <span>Debug Mode — show LLM call logs panel</span>
         </label>
-        <p style={hintStyle}>
-          When enabled, right-clicking any canvas agent and selecting &quot;Run with LLM&quot; will call the real API and show logs.
-        </p>
-      </section>
 
-      {/* Test connection result */}
-      {testState === 'error' && (
-        <div style={{ padding: '8px 12px', borderRadius: '6px', background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.3)', color: '#F87171', fontSize: '13px' }}>
-          {testError}
+        {/* Test error */}
+        {testState === 'error' && (
+          <div style={{ ...errorBoxStyle, marginTop: '12px' }}>{testError}</div>
+        )}
+
+        {/* Test button (inline, right-aligned) */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '12px' }}>
+          <button type="button" onClick={() => { void handleTest() }} disabled={testState === 'testing' || !apiKeyDraft} style={testBtnStyle(testState)}>
+            {testLabel(testState)}
+          </button>
         </div>
-      )}
+      </div>
 
-      {/* Actions */}
+      {/* ═══════════════════════════════════════════════════════════════════════
+          SECTION 2 — Web Search Tool
+          ═══════════════════════════════════════════════════════════════════════ */}
+      <div style={sectionBoxStyle}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+          <div style={sectionTitleStyle}>🔍 Web Search Tool — for research agents</div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '12px', color: wsEnabled ? '#34D399' : 'var(--t4)' }}>
+            <input type="checkbox" checked={wsEnabled} onChange={(e) => setWsEnabled(e.target.checked)} style={{ width: '14px', height: '14px', cursor: 'pointer' }} />
+            {wsEnabled ? 'Enabled' : 'Disabled'}
+          </label>
+        </div>
+
+        <div style={{ opacity: wsEnabled ? 1 : 0.45, pointerEvents: wsEnabled ? 'auto' : 'none', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+
+          {/* Provider selector */}
+          <div>
+            <label style={labelStyle}>Provider (Sonar model with web access)</label>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {(['perplexity', 'openrouter'] as WebSearchProvider[]).map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => { setWsProvider(p); setWsTestState('idle') }}
+                  style={{
+                    ...providerBtnStyle,
+                    background: wsProvider === p ? 'rgba(6,182,212,0.15)' : 'var(--bg-card)',
+                    border: `1px solid ${wsProvider === p ? '#06B6D4' : 'var(--border)'}`,
+                    color: wsProvider === p ? '#06B6D4' : 'var(--t2)',
+                    fontWeight: wsProvider === p ? 700 : 400,
+                  }}
+                >
+                  {p === 'perplexity' ? '🟣 Perplexity (direct)' : '🔀 OpenRouter → Sonar'}
+                </button>
+              ))}
+            </div>
+            <p style={{ ...hintStyle, marginTop: '6px' }}>
+              {wsProvider === 'perplexity'
+                ? <>Key format: <code>pplx-…</code> — <a href="https://www.perplexity.ai/settings/api" target="_blank" rel="noreferrer" style={{ color: '#06B6D4' }}>perplexity.ai/settings/api ↗</a></>
+                : <>Same OpenRouter key as above, or a separate one. Routes to <code>perplexity/sonar-*</code> models.</>
+              }
+            </p>
+          </div>
+
+          {/* API Key (only for Perplexity direct or separate OR key) */}
+          <div>
+            <label style={labelStyle}>
+              {wsProvider === 'perplexity' ? 'Perplexity API Key' : 'OpenRouter API Key (can reuse LLM key)'}
+            </label>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <input
+                type={showWsKey ? 'text' : 'password'}
+                value={wsKey}
+                onChange={(e) => { setWsKey(e.target.value); setWsTestState('idle') }}
+                placeholder={wsProvider === 'perplexity' ? 'pplx-…' : 'sk-or-…'}
+                aria-label="Web search API key"
+                style={inputStyle}
+              />
+              <button type="button" onClick={() => setShowWsKey((v) => !v)} style={iconBtnStyle} aria-label={showWsKey ? 'Hide key' : 'Show key'}>
+                {showWsKey ? '🙈' : '👁'}
+              </button>
+            </div>
+          </div>
+
+          {/* Sonar model selector */}
+          <div>
+            <label style={labelStyle}>Sonar Model</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {SONAR_MODELS.map(({ id, label }) => (
+                <label
+                  key={id}
+                  style={{
+                    display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer',
+                    padding: '8px 10px', borderRadius: '6px',
+                    background: wsModel === id ? 'rgba(6,182,212,0.08)' : 'transparent',
+                    border: `1px solid ${wsModel === id ? 'rgba(6,182,212,0.3)' : 'transparent'}`,
+                  }}
+                >
+                  <input
+                    type="radio"
+                    name="sonar-model"
+                    value={id}
+                    checked={wsModel === id}
+                    onChange={() => setWsModel(id as SonarModelId)}
+                    style={{ marginTop: '2px', accentColor: '#06B6D4' }}
+                  />
+                  <div>
+                    <div style={{ fontSize: '12px', fontWeight: 600, color: wsModel === id ? '#06B6D4' : 'var(--t1)', fontFamily: 'var(--ff-mono)' }}>{id}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--t4)', marginTop: '1px' }}>{label}</div>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Web search test error */}
+          {wsTestState === 'error' && (
+            <div style={errorBoxStyle}>{wsTestError}</div>
+          )}
+
+          {/* Test button */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <button type="button" onClick={() => { void handleWsTest() }} disabled={wsTestState === 'testing' || !wsKey} style={testBtnStyle(wsTestState)}>
+              {testLabel(wsTestState)}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Global actions ──────────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-        <button
-          type="button"
-          onClick={() => { void handleTest() }}
-          disabled={testState === 'testing' || !apiKeyDraft}
-          style={{
-            ...btnStyle,
-            background: testState === 'ok' ? 'rgba(52,211,153,0.15)' : testState === 'error' ? 'rgba(248,113,113,0.15)' : 'var(--bg-card)',
-            color: testState === 'ok' ? '#34D399' : testState === 'error' ? '#F87171' : 'var(--t2)',
-            border: `1px solid ${testState === 'ok' ? 'rgba(52,211,153,0.3)' : testState === 'error' ? 'rgba(248,113,113,0.3)' : 'var(--border)'}`,
-            cursor: testState === 'testing' || !apiKeyDraft ? 'not-allowed' : 'pointer',
-          }}
-        >
-          {testLabel}
-        </button>
         <button type="button" onClick={closeModal} style={{ ...btnStyle, background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--t2)', cursor: 'pointer' }}>
           Cancel
         </button>
@@ -166,19 +349,37 @@ const LLMSettingsContent: React.FC = () => {
 }
 
 export const LLMSettingsModal: React.FC = () => (
-  <ModalBase modalId={MODAL_ID} title="⚙ LLM Settings — CometAPI" width={560}>
+  <ModalBase modalId={MODAL_ID} title="⚙ LLM Settings" width={600}>
     <LLMSettingsContent />
   </ModalBase>
 )
 
+// ─── Shared styles ────────────────────────────────────────────────────────────
+
+const sectionBoxStyle: React.CSSProperties = {
+  background: 'var(--bg-card)',
+  border: '1px solid var(--border)',
+  borderRadius: '10px',
+  padding: '16px',
+}
+
+const sectionTitleStyle: React.CSSProperties = {
+  fontSize: '12px',
+  fontWeight: 700,
+  textTransform: 'uppercase',
+  letterSpacing: '0.06em',
+  color: 'var(--t3)',
+  marginBottom: '14px',
+}
+
 const labelStyle: React.CSSProperties = {
   display: 'block',
-  fontSize: '12px',
+  fontSize: '11px',
   fontWeight: 600,
   textTransform: 'uppercase',
   letterSpacing: '0.05em',
   color: 'var(--t3)',
-  marginBottom: '6px',
+  marginBottom: '5px',
 }
 
 const inputStyle: React.CSSProperties = {
@@ -197,7 +398,6 @@ const inputStyle: React.CSSProperties = {
 const hintStyle: React.CSSProperties = {
   fontSize: '11px',
   color: 'var(--t4)',
-  marginTop: '4px',
   margin: '4px 0 0',
 }
 
@@ -217,3 +417,21 @@ const btnStyle: React.CSSProperties = {
   fontSize: '13px',
   fontWeight: 600,
 }
+
+const providerBtnStyle: React.CSSProperties = {
+  padding: '6px 14px',
+  borderRadius: '6px',
+  fontSize: '12px',
+  cursor: 'pointer',
+  transition: 'background 0.15s, border-color 0.15s',
+}
+
+const errorBoxStyle: React.CSSProperties = {
+  padding: '8px 12px',
+  borderRadius: '6px',
+  background: 'rgba(248,113,113,0.1)',
+  border: '1px solid rgba(248,113,113,0.3)',
+  color: '#F87171',
+  fontSize: '12px',
+}
+
