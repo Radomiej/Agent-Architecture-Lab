@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { SimMessage, LLMCallLog, LLMCallStatus } from '../types'
+import type { SimMessage, LLMCallLog, LLMCallStatus, ToolCall } from '../types'
 import { callAgent } from '../services/llmService'
 import { useLLMStore } from './llmStore'
 import { useCanvasStore } from './canvasStore'
@@ -15,6 +15,7 @@ interface SimulationStore {
   activeAgents: string[]
   completedPhases: string[]
   executionLog: LLMCallLog[]
+  toolCalls: ToolCall[]
   debugPanelOpen: boolean
   start: () => void
   stop: () => void
@@ -27,6 +28,8 @@ interface SimulationStore {
   reset: () => void
   setDebugPanelOpen: (open: boolean) => void
   toggleDebugPanel: () => void
+  addToolCall: (call: ToolCall) => void
+  addToolCalls: (calls: ToolCall[]) => void
   /** Run a single agent node via the real LLM (debug mode). */
   runAgentLLM: (nodeId: string, presetName?: string) => Promise<void>
   _updateLog: (id: string, patch: Partial<LLMCallLog>) => void
@@ -41,9 +44,10 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
   activeAgents: [],
   completedPhases: [],
   executionLog: [],
+  toolCalls: [],
   debugPanelOpen: false,
 
-  start: () => set({ isRunning: true, isPaused: false, step: 0, messages: [], completedPhases: [], phase: 'strategy' }),
+  start: () => set({ isRunning: true, isPaused: false, step: 0, messages: [], completedPhases: [], toolCalls: [], phase: 'strategy' }),
   stop: () => set({ isRunning: false, isPaused: false, activeAgents: [] }),
   pause: () => set({ isPaused: true }),
   resume: () => set({ isPaused: false }),
@@ -64,6 +68,12 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
       phase,
     })),
 
+  addToolCall: (call) =>
+    set((s) => ({ toolCalls: [...s.toolCalls, call] })),
+
+  addToolCalls: (calls) =>
+    set((s) => ({ toolCalls: [...s.toolCalls, ...calls] })),
+
   reset: () =>
     set({
       isRunning: false,
@@ -74,6 +84,7 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
       activeAgents: [],
       completedPhases: [],
       executionLog: [],
+      toolCalls: [],
     }),
 
   setDebugPanelOpen: (open) => set({ debugPanelOpen: open }),

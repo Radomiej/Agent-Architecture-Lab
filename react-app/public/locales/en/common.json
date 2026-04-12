@@ -148,6 +148,33 @@
     "k": "K = Cost",
     "escape": "Esc = Close",
     "space": "Space = Simulation",
-    "del": "Del = Delete selected"
+    "del": "Del = Delete selected",
+    "r": "R = Simulation Review"
+  },
+  "review": {
+    "title": "Simulation Review",
+    "tab": {
+      "timeline": "Timeline",
+      "files": "Files",
+      "tools": "Tool Calls",
+      "summary": "Summary"
+    },
+    "noMessages": "No simulation messages yet. Run a simulation first.",
+    "noFiles": "No files in virtual file system.",
+    "noTools": "No tool calls recorded. Run a simulation first.",
+    "fileTree": "File Tree",
+    "createdBy": "by",
+    "selectFile": "Select a file from the tree to view its content.",
+    "filter": "Filter",
+    "all": "All",
+    "args": "Arguments",
+    "result": "Result",
+    "messages": "Messages",
+    "toolCallsTotal": "Tool Calls",
+    "filesCreated": "Files Created",
+    "errors": "Errors",
+    "byTool": "By Tool",
+    "byAgent": "By Agent",
+    "calls": "calls"
   }
 }

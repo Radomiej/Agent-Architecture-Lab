@@ -9,13 +9,23 @@ import { CanvasArea } from './components/canvas/CanvasArea'
 import { CostModal } from './components/modals/CostModal'
 import { MermaidModal } from './components/modals/MermaidModal'
 import { LLMSettingsModal } from './components/modals/LLMSettingsModal'
+import { SimulationReviewModal } from './components/modals/SimulationReviewModal'
 import { DebugPanel } from './components/debug/DebugPanel'
 import { MobileNav } from './components/layout/MobileNav'
 import { useUiStore } from './store/uiStore'
 import { useCanvasStore } from './store/canvasStore'
 import { useSimulationStore } from './store/simulationStore'
+import { useVfsStore } from './store/vfsStore'
 import { AD_MAP } from './data/agents'
 import { ToastContainer } from './components/primitives/Toast'
+import { simulateToolCalls } from './utils/toolSimulator'
+import type { ToolType } from './types'
+
+const TOOL_ICONS: Record<ToolType, string> = {
+  Read: '📖', Write: '✏️', Edit: '📝', Bash: '💻', Glob: '🔍',
+  Grep: '🔎', LS: '📁', WebSearch: '🌐', WebFetch: '🌐',
+  Agent: '👤', TodoRead: '📋', TodoWrite: '📋', TaskCreate: '📌',
+}
 
 function AppLayout() {
   useTheme()
@@ -30,11 +40,13 @@ function AppLayout() {
     setActiveAgents,
     completePhase,
     addMessage,
+    addToolCalls,
     stop,
     messages,
   } = useSimulationStore()
   const [toasts, setToasts] = useState<Array<{ id: string; message: string; type?: 'info' | 'success' | 'warn' | 'error' }>>([])
   const msgCursorRef = useRef(0)
+  const vfsSeededRef = useRef(false)
 
   const simulationOrder = useMemo(() => {
     const phaseRank: Record<string, number> = {
@@ -59,6 +71,21 @@ function AppLayout() {
       })
   }, [nodes])
 
+  // Seed VFS when simulation starts
+  useEffect(() => {
+    if (isRunning && !vfsSeededRef.current) {
+      const vfs = useVfsStore.getState()
+      vfs.reset()
+      vfs.seedProject()
+      vfsSeededRef.current = true
+    }
+    if (!isRunning) {
+      vfsSeededRef.current = false
+    }
+  }, [isRunning])
+
+  const { connections } = useCanvasStore()
+
   useEffect(() => {
     if (!isRunning || isPaused) return
 
@@ -73,6 +100,7 @@ function AppLayout() {
         phase: 'strategy',
       })
       stop()
+      openModal('review')
       return
     }
 
@@ -91,14 +119,36 @@ function AppLayout() {
       phase: agent.phase,
     })
 
+    // Generate tool calls for this agent
+    const vfs = useVfsStore.getState()
+    const toolCalls = simulateToolCalls(agent, node, nodes, connections, AD_MAP, vfs)
+    if (toolCalls.length > 0) {
+      addToolCalls(toolCalls)
+      // Add tool call messages to timeline
+      for (const tc of toolCalls) {
+        const icon = TOOL_ICONS[tc.tool] ?? '🔧'
+        const preview = tc.result.length > 80 ? tc.result.slice(0, 80) + '…' : tc.result
+        const statusMark = tc.status === 'error' ? '❌ ' : ''
+        addMessage({
+          agentId: agent.id,
+          text: `${icon} ${tc.tool}: ${statusMark}${preview}`,
+          timestamp: tc.timestamp,
+          phase: agent.phase,
+        })
+      }
+    }
+
+    // Time per step scales with tool calls: base 800ms + 200ms per tool call
+    const stepTime = 800 + toolCalls.length * 200
+
     const timer = window.setTimeout(() => {
       setActiveAgents([])
       completePhase(agent.phase)
       nextStep()
-    }, 1500)
+    }, stepTime)
 
     return () => window.clearTimeout(timer)
-  }, [isRunning, isPaused, simulationOrder, step, setActiveAgents, addMessage, completePhase, nextStep, stop])
+  }, [isRunning, isPaused, simulationOrder, step, setActiveAgents, addMessage, addToolCalls, completePhase, nextStep, stop, nodes, connections, openModal])
 
   useEffect(() => {
     if (messages.length <= msgCursorRef.current) return
@@ -134,6 +184,7 @@ function AppLayout() {
 
       if (e.key === 'k' || e.key === 'K') { openModal('cost'); return }
       if (e.key === 'm' || e.key === 'M') { openModal('mermaid'); return }
+      if (e.key === 'r' || e.key === 'R') { openModal('review'); return }
       if (e.key === ',') { openModal('settings'); return }
       if (e.key === 'd' || e.key === 'D') { toggleDebugPanel(); return }
 
@@ -217,6 +268,7 @@ function AppLayout() {
       <CostModal />
       <MermaidModal />
       <LLMSettingsModal />
+      <SimulationReviewModal />
 
       {/* Debug panel */}
       <DebugPanel />

@@ -163,6 +163,20 @@ export const AgentNode: React.FC<AgentNodeProps> = ({
             }}
           />
         )}
+
+        {/* Tool activity indicator */}
+        {isActive && (
+          <div
+            className="absolute pointer-events-none text-[8px]"
+            style={{
+              top: -8,
+              left: -8,
+              animation: 'spin 1s linear infinite',
+            }}
+          >
+            🔧
+          </div>
+        )}
       </div>
 
       {/* Context menu */}

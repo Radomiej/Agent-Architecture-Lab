@@ -148,6 +148,33 @@
     "k": "K = Koszt",
     "escape": "Esc = Zamknij",
     "space": "Spacja = Symulacja",
-    "del": "Del = Usun zaznaczone"
+    "del": "Del = Usun zaznaczone",
+    "r": "R = Przeglad symulacji"
+  },
+  "review": {
+    "title": "Przeglad Symulacji",
+    "tab": {
+      "timeline": "Oś czasu",
+      "files": "Pliki",
+      "tools": "Wywolania narzedzi",
+      "summary": "Podsumowanie"
+    },
+    "noMessages": "Brak komunikatow symulacji. Uruchom symulacje.",
+    "noFiles": "Brak plikow w wirtualnym systemie plikow.",
+    "noTools": "Brak wywolan narzedzi. Uruchom symulacje.",
+    "fileTree": "Drzewo plikow",
+    "createdBy": "autor",
+    "selectFile": "Wybierz plik z drzewa aby zobaczyc jego zawartosc.",
+    "filter": "Filtr",
+    "all": "Wszystkie",
+    "args": "Argumenty",
+    "result": "Wynik",
+    "messages": "Komunikaty",
+    "toolCallsTotal": "Wywolania narzedzi",
+    "filesCreated": "Utworzone pliki",
+    "errors": "Bledy",
+    "byTool": "Wg narzedzia",
+    "byAgent": "Wg agenta",
+    "calls": "wywolan"
   }
 }

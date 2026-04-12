@@ -225,3 +225,40 @@ export interface LLMCallLog {
   error?: string
   startedAt: number
 }
+
+// ─── Virtual File System ───────────────────────────────────────────────────────
+
+export interface VfsFile {
+  path: string
+  content: string
+  createdBy: string
+  modifiedAt: number
+  type: 'file' | 'dir'
+}
+
+// ─── Tool Simulation ──────────────────────────────────────────────────────────
+
+export type ToolType =
+  | 'Read'
+  | 'Write'
+  | 'Edit'
+  | 'Bash'
+  | 'Glob'
+  | 'Grep'
+  | 'LS'
+  | 'WebSearch'
+  | 'WebFetch'
+  | 'Agent'
+  | 'TodoRead'
+  | 'TodoWrite'
+  | 'TaskCreate'
+
+export interface ToolCall {
+  id: string
+  agentId: string
+  tool: ToolType
+  args: Record<string, unknown>
+  result: string
+  timestamp: number
+  status: 'ok' | 'error'
+}
