@@ -9,6 +9,7 @@ import { CanvasArea } from './components/canvas/CanvasArea'
 import { CostModal } from './components/modals/CostModal'
 import { MermaidModal } from './components/modals/MermaidModal'
 import { LLMSettingsModal } from './components/modals/LLMSettingsModal'
+import { DecisionGateModal } from './components/modals/DecisionGateModal'
 import { DebugPanel } from './components/debug/DebugPanel'
 import { useUiStore } from './store/uiStore'
 import { useCanvasStore } from './store/canvasStore'
@@ -18,7 +19,7 @@ function AppLayout() {
   useTheme()
   const { openModal, activeModal, closeModal } = useUiStore()
   const { selected, removeNode } = useCanvasStore()
-  const { toggleDebugPanel } = useSimulationStore()
+  const { toggleDebugPanel, hitlGateOpen, closeHitlGate } = useSimulationStore()
 
   // Global keyboard shortcuts
   useEffect(() => {
@@ -27,8 +28,9 @@ function AppLayout() {
       const isInput = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT'
         || (document.activeElement as HTMLElement)?.isContentEditable
 
+      if (e.key === 'Escape' && hitlGateOpen) { closeHitlGate(); return }
       if (e.key === 'Escape' && activeModal) { closeModal(); return }
-      if (isInput || activeModal) return
+      if (isInput || activeModal || hitlGateOpen) return
 
       if (e.key === 'k' || e.key === 'K') { openModal('cost'); return }
       if (e.key === 'm' || e.key === 'M') { openModal('mermaid'); return }
@@ -43,7 +45,7 @@ function AppLayout() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [openModal, closeModal, activeModal, selected, removeNode, toggleDebugPanel])
+  }, [openModal, closeModal, activeModal, selected, removeNode, toggleDebugPanel, hitlGateOpen, closeHitlGate])
 
   return (
     <div
@@ -86,6 +88,7 @@ function AppLayout() {
       <CostModal />
       <MermaidModal />
       <LLMSettingsModal />
+      <DecisionGateModal />
 
       {/* Debug panel (fixed bottom drawer) */}
       <DebugPanel />

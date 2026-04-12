@@ -6,6 +6,18 @@ import { useCanvasStore } from './canvasStore'
 import { AD_MAP } from '../data/agents'
 import { buildAgentContext } from '../utils/buildAgentContext'
 
+export interface HitlGateOption {
+  id: 'A' | 'B' | 'C'
+  label: string
+  desc: string
+}
+
+export const HITL_GATE_OPTIONS: HitlGateOption[] = [
+  { id: 'A', label: 'Kontynuuj plan',       desc: 'Proceed with the current plan as defined.' },
+  { id: 'B', label: 'Dostosuj zakres',      desc: 'Adjust scope or approach before continuing.' },
+  { id: 'C', label: 'Zatrzymaj i przejrzyj', desc: 'Stop simulation and review results so far.' },
+]
+
 interface SimulationStore {
   isRunning: boolean
   isPaused: boolean
@@ -16,6 +28,12 @@ interface SimulationStore {
   completedPhases: string[]
   executionLog: LLMCallLog[]
   debugPanelOpen: boolean
+  /** HITL Decision Gate */
+  hitlGateOpen: boolean
+  hitlGateNodeId: string | null
+  hitlGateChoice: string | null
+  openHitlGate: (nodeId: string) => void
+  closeHitlGate: (choice?: string) => void
   start: () => void
   stop: () => void
   pause: () => void
@@ -42,9 +60,30 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
   completedPhases: [],
   executionLog: [],
   debugPanelOpen: false,
+  hitlGateOpen: false,
+  hitlGateNodeId: null,
+  hitlGateChoice: null,
 
-  start: () => set({ isRunning: true, isPaused: false, step: 0, messages: [], completedPhases: [], phase: 'strategy' }),
-  stop: () => set({ isRunning: false, isPaused: false, activeAgents: [] }),
+  openHitlGate: (nodeId) => set({ hitlGateOpen: true, hitlGateNodeId: nodeId, hitlGateChoice: null }),
+
+  closeHitlGate: (choice) => set({
+    hitlGateOpen: false,
+    hitlGateNodeId: null,
+    hitlGateChoice: choice ?? null,
+  }),
+
+  start: () => {
+    set({ isRunning: true, isPaused: false, step: 0, messages: [], completedPhases: [], phase: 'strategy', hitlGateOpen: false, hitlGateChoice: null })
+    // If any decision_presenter (HITL) node is present, open the gate after a short delay
+    const canvas = useCanvasStore.getState()
+    const hitlNode = canvas.nodes.find((n) => n.agentId === 'decision_presenter')
+    if (hitlNode) {
+      setTimeout(() => {
+        if (get().isRunning) get().openHitlGate(hitlNode.id)
+      }, 800)
+    }
+  },
+  stop: () => set({ isRunning: false, isPaused: false, activeAgents: [], hitlGateOpen: false }),
   pause: () => set({ isPaused: true }),
   resume: () => set({ isPaused: false }),
 
@@ -74,6 +113,9 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
       activeAgents: [],
       completedPhases: [],
       executionLog: [],
+      hitlGateOpen: false,
+      hitlGateNodeId: null,
+      hitlGateChoice: null,
     }),
 
   setDebugPanelOpen: (open) => set({ debugPanelOpen: open }),
