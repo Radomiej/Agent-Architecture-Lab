@@ -27,43 +27,22 @@ export const Toast: React.FC<ToastProps> = ({ message, type = 'info', onDismiss,
   return (
     <div
       role="alert"
+      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-2.5 px-4 py-2.5 rounded-lg text-[13px] font-medium max-w-sm whitespace-nowrap"
       style={{
-        position: 'fixed',
-        bottom: '24px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 9999,
-        display: 'flex',
-        alignItems: 'center',
-        gap: '10px',
-        padding: '10px 16px',
-        borderRadius: '8px',
         background: colors.bg,
         border: `1px solid ${colors.border}`,
         backdropFilter: 'blur(12px)',
         color: colors.text,
-        fontSize: '13px',
-        fontWeight: 500,
         boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
         animation: 'slideIn 0.2s var(--ease-decelerate, ease)',
-        maxWidth: '400px',
-        whiteSpace: 'nowrap',
       }}
     >
-      <span style={{ flex: 1 }}>{message}</span>
+      <span className="flex-1">{message}</span>
       <button
         onClick={onDismiss}
         aria-label="Zamknij powiadomienie"
-        style={{
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
-          color: colors.text,
-          opacity: 0.6,
-          fontSize: '16px',
-          lineHeight: 1,
-          padding: '2px 4px',
-        }}
+        className="opacity-60 hover:opacity-100 transition-opacity text-base leading-none px-1"
+        style={{ background: 'none', border: 'none', cursor: 'pointer', color: colors.text }}
       >
         ×
       </button>
@@ -89,3 +68,4 @@ export const ToastContainer: React.FC<ToastContainerProps> = ({ toasts, onDismis
     ))}
   </>
 )
+

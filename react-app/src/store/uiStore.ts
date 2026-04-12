@@ -38,6 +38,8 @@ interface UiStore {
   agentPaletteSearch: string
   selectedAgentId: string | null
   selectedPresetId: string | null
+  leftDrawerOpen: boolean
+  rightDrawerOpen: boolean
   setTheme: (theme: Theme) => void
   setLang: (lang: Lang) => void
   toggleTheme: () => void
@@ -48,6 +50,8 @@ interface UiStore {
   setSearch: (q: string) => void
   selectAgent: (id: string | null) => void
   selectPreset: (id: string | null) => void
+  setLeftDrawer: (open: boolean) => void
+  setRightDrawer: (open: boolean) => void
 }
 
 const initialTheme = readTheme()
@@ -64,6 +68,8 @@ export const useUiStore = create<UiStore>((set) => ({
   agentPaletteSearch: '',
   selectedAgentId: null,
   selectedPresetId: null,
+  leftDrawerOpen: false,
+  rightDrawerOpen: false,
 
   setTheme: (theme) => {
     try { localStorage.setItem('acV32_theme', theme) } catch { /* noop */ }
@@ -101,4 +107,7 @@ export const useUiStore = create<UiStore>((set) => ({
 
   selectAgent: (id) => set({ selectedAgentId: id, selectedPresetId: null }),
   selectPreset: (id) => set({ selectedPresetId: id, selectedAgentId: null }),
+
+  setLeftDrawer: (open) => set({ leftDrawerOpen: open }),
+  setRightDrawer: (open) => set({ rightDrawerOpen: open }),
 }))

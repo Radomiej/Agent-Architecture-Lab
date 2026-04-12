@@ -9,8 +9,6 @@ import { AgentIcon } from '../primitives/AgentIcon'
 import { PhaseChip } from '../primitives/PhaseChip'
 import { getAgentColor, getPresetColor } from '../../data/agentColors'
 
-const SIDEBAR_WIDTH = 260
-
 export const LeftSidebar: React.FC = () => {
   const { t } = useTranslation()
   const { sidebarTab, setSidebarTab, agentPaletteSearch, setSearch, selectAgent, selectPreset, theme } = useUiStore()
@@ -36,39 +34,21 @@ export const LeftSidebar: React.FC = () => {
 
   return (
     <aside
-      style={{
-        width: SIDEBAR_WIDTH,
-        minWidth: SIDEBAR_WIDTH,
-        display: 'flex',
-        flexDirection: 'column',
-        background: 'var(--bg-panel)',
-        borderRight: '1px solid var(--border)',
-        height: '100%',
-        overflow: 'hidden',
-      }}
+      className="flex flex-col h-full overflow-hidden w-full"
       aria-label="Left sidebar"
     >
       {/* Tabs */}
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+      <div className="flex shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
         {(['agents', 'presets', 'saved'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setSidebarTab(tab)}
             role="tab"
             aria-selected={sidebarTab === tab}
+            className="flex-1 py-2.5 px-1 border-0 bg-transparent cursor-pointer text-[11px] font-semibold uppercase tracking-widest transition-colors"
             style={{
-              flex: 1,
-              padding: '10px 4px',
-              border: 'none',
-              background: 'none',
-              cursor: 'pointer',
-              fontSize: '11px',
-              fontWeight: 600,
-              textTransform: 'uppercase',
-              letterSpacing: '0.04em',
               color: sidebarTab === tab ? 'var(--accent1)' : 'var(--t3)',
               borderBottom: sidebarTab === tab ? '2px solid var(--accent1)' : '2px solid transparent',
-              transition: 'color 0.15s',
             }}
           >
             {tab === 'agents' ? t('nav.agents', 'Agenci') : tab === 'presets' ? t('nav.presets', 'Presety') : t('nav.saved', 'Zapisane')}
@@ -78,30 +58,25 @@ export const LeftSidebar: React.FC = () => {
 
       {/* Search */}
       {(sidebarTab === 'agents' || sidebarTab === 'presets') && (
-        <div style={{ padding: '8px 10px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+        <div className="px-2.5 py-2 shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
           <input
             type="search"
             value={agentPaletteSearch}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={sidebarTab === 'agents' ? 'Szukaj agenta...' : 'Szukaj presetu...'}
             aria-label="Szukaj"
+            className="w-full px-2.5 py-1.5 rounded-md text-xs outline-none box-border"
             style={{
-              width: '100%',
-              padding: '6px 10px',
               background: 'var(--bg-input)',
               border: '1px solid var(--border)',
-              borderRadius: '6px',
               color: 'var(--t1)',
-              fontSize: '12px',
-              outline: 'none',
-              boxSizing: 'border-box',
             }}
           />
         </div>
       )}
 
       {/* Content */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '4px 0' }}>
+      <div className="flex-1 overflow-y-auto py-1">
         {sidebarTab === 'agents' && (
           <AgentList groups={groupedAgents} onSelect={selectAgent} theme={theme} />
         )}
@@ -131,14 +106,8 @@ const AgentList: React.FC<{
         return (
           <div key={cat}>
             <div
-              style={{
-                padding: '6px 12px 4px',
-                fontSize: '10px',
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                letterSpacing: '0.06em',
-                color: catColor,
-              }}
+              className="px-3 pt-1.5 pb-1 text-[10px] font-bold uppercase tracking-[0.06em]"
+              style={{ color: catColor }}
             >
               {cat}
             </div>
@@ -156,39 +125,22 @@ const AgentList: React.FC<{
                     e.dataTransfer.setData('agent-id', agent.id)
                     e.dataTransfer.effectAllowed = 'copy'
                   }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '6px 12px',
-                    cursor: 'grab',
-                    transition: 'background 0.1s',
-                  }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'var(--state-hover)' }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
+                  className="flex items-center gap-2 px-3 py-1.5 cursor-grab transition-colors hover:bg-[var(--state-hover)] focus-visible:outline-none focus-visible:bg-[var(--state-focus)]"
                 >
                   <div
+                    className="flex items-center justify-center shrink-0 rounded-lg"
                     style={{
                       width: 30,
                       height: 30,
-                      borderRadius: '8px',
                       background: `rgba(${hexToRgb(color)},0.15)`,
                       border: `1px solid rgba(${hexToRgb(color)},0.3)`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
                     }}
                   >
                     <AgentIcon id={agent.id} size={16} color={color} />
                   </div>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--t1)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {agent.name}
-                    </div>
-                    <div style={{ fontSize: '10px', color: 'var(--t3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {agent.model.toUpperCase()}
-                    </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-semibold truncate" style={{ color: 'var(--t1)' }}>{agent.name}</div>
+                    <div className="text-[10px] truncate" style={{ color: 'var(--t3)' }}>{agent.model.toUpperCase()}</div>
                   </div>
                 </div>
               )
@@ -212,7 +164,7 @@ const PresetList: React.FC<{
         if (filtered.length === 0) return null
         return (
           <div key={cat.name}>
-            <div style={{ padding: '6px 12px 4px', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--t3)' }}>
+            <div className="px-3 pt-1.5 pb-1 text-[10px] font-bold uppercase tracking-[0.06em]" style={{ color: 'var(--t3)' }}>
               {cat.name}
             </div>
             {filtered.map((id) => {
@@ -225,22 +177,13 @@ const PresetList: React.FC<{
                   tabIndex={0}
                   onClick={() => onSelect(id)}
                   onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onSelect(id)}
-                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px', cursor: 'pointer' }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'var(--state-hover)' }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
+                  className="flex items-center gap-2 px-3 py-1.5 cursor-pointer transition-colors hover:bg-[var(--state-hover)] focus-visible:outline-none focus-visible:bg-[var(--state-focus)]"
                 >
                   <div
-                    style={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: '50%',
-                      background: color,
-                      flexShrink: 0,
-                    }}
+                    className="w-1.5 h-1.5 rounded-full shrink-0"
+                    style={{ background: color }}
                   />
-                  <span style={{ fontSize: '12px', color: 'var(--t1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {label}
-                  </span>
+                  <span className="text-xs truncate" style={{ color: 'var(--t1)' }}>{label}</span>
                 </div>
               )
             })}
@@ -254,7 +197,7 @@ const PresetList: React.FC<{
 const SavedList: React.FC<{ configs: { name: string; data: unknown }[] }> = ({ configs }) => {
   if (configs.length === 0) {
     return (
-      <div style={{ padding: '24px 16px', textAlign: 'center', color: 'var(--t3)', fontSize: '12px' }}>
+      <div className="px-4 py-6 text-center text-xs" style={{ color: 'var(--t3)' }}>
         Brak zapisanych konfiguracji
       </div>
     )
@@ -264,9 +207,9 @@ const SavedList: React.FC<{ configs: { name: string; data: unknown }[] }> = ({ c
       {configs.map((cfg) => (
         <div
           key={cfg.name}
-          style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px' }}
+          className="flex items-center gap-2 px-3 py-2"
         >
-          <span style={{ fontSize: '12px', color: 'var(--t1)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <span className="text-xs flex-1 truncate" style={{ color: 'var(--t1)' }}>
             {cfg.name}
           </span>
           <PhaseChip phase="strategy" small />
@@ -282,3 +225,4 @@ function hexToRgb(hex: string): string {
   const b = parseInt(hex.slice(5, 7), 16)
   return `${r},${g},${b}`
 }
+

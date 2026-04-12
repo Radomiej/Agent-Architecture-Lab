@@ -5,10 +5,11 @@ import { useSimulationStore } from '../../store/simulationStore'
 import { useCanvasStore } from '../../store/canvasStore'
 import { useCostStore } from '../../store/costStore'
 import { useLLMStore } from '../../store/llmStore'
+import { cn } from '../../utils/cn'
 
 export const TopBar: React.FC = () => {
   const { t } = useTranslation()
-  const { theme, toggleTheme, lang, toggleLang, openModal } = useUiStore()
+  const { theme, toggleTheme, lang, toggleLang, openModal, setLeftDrawer, leftDrawerOpen } = useUiStore()
   const { isRunning, start, stop, debugPanelOpen, toggleDebugPanel } = useSimulationStore()
   const nodes = useCanvasStore((s) => s.nodes)
   const getCostSummary = useCostStore((s) => s.getCostSummary)
@@ -27,30 +28,35 @@ export const TopBar: React.FC = () => {
 
   return (
     <header
+      className="flex items-center gap-2 md:gap-3 h-12 px-3 md:px-4 shrink-0 relative z-[100]"
       style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '12px',
-        height: '48px',
-        padding: '0 16px',
-        background: 'var(--bg-panel, rgba(15,15,24,0.85))',
-        borderBottom: '1px solid var(--border, rgba(255,255,255,0.08))',
+        background: 'var(--bg-panel)',
+        borderBottom: '1px solid var(--border)',
         backdropFilter: 'blur(20px)',
-        position: 'relative',
-        zIndex: 100,
-        flexShrink: 0,
       }}
     >
+      {/* Hamburger — mobile only */}
+      <button
+        className="md:hidden btn-ghost-app shrink-0"
+        onClick={() => setLeftDrawer(!leftDrawerOpen)}
+        aria-label="Toggle sidebar menu"
+      >
+        ☰
+      </button>
+
       {/* App Title */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginRight: '8px' }}>
-        <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--t1)', letterSpacing: '-0.01em', whiteSpace: 'nowrap' }}>
+      <div className="flex items-center gap-2 mr-1 md:mr-2 shrink-0">
+        <span className="text-base font-bold tracking-tight whitespace-nowrap hidden sm:inline" style={{ color: 'var(--t1)' }}>
           Agent Architecture
         </span>
-        <span style={{ fontSize: '11px', padding: '1px 6px', borderRadius: '4px', background: 'rgba(167,139,250,0.15)', color: '#A78BFA', fontWeight: 600 }}>
+        <span className="text-base font-bold tracking-tight whitespace-nowrap sm:hidden" style={{ color: 'var(--t1)' }}>
+          AA
+        </span>
+        <span className="text-[11px] px-1.5 py-0.5 rounded font-semibold" style={{ background: 'rgba(167,139,250,0.15)', color: '#A78BFA' }}>
           v32.16
         </span>
         {apiKey && (
-          <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: '4px', background: 'rgba(52,211,153,0.12)', color: '#34D399', fontWeight: 600 }}>
+          <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold hidden sm:inline" style={{ background: 'rgba(52,211,153,0.12)', color: '#34D399' }}>
             LLM ✓
           </span>
         )}
@@ -61,17 +67,11 @@ export const TopBar: React.FC = () => {
         <button
           onClick={() => openModal('cost')}
           aria-label={t('cost.center', 'Cost Command Center')}
+          className="flex items-center gap-0 rounded-md overflow-hidden cursor-pointer h-7 shrink-0"
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '1px',
             background: 'var(--glass-hud-bg)',
             border: '1px solid var(--border)',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            padding: '0',
-            overflow: 'hidden',
-            height: '28px',
+            padding: 0,
           }}
         >
           <HudCell label={t('cost.title', 'KOSZT')} value={`${cost.p50Fmt}–${cost.p90Fmt}`} color={sevColor(cost.severity)} />
@@ -80,41 +80,28 @@ export const TopBar: React.FC = () => {
         </button>
       )}
 
-      <div style={{ flex: 1 }} />
+      <div className="flex-1" />
 
-      {/* Debug panel toggle — visible only when debugMode is on */}
+      {/* Debug panel toggle */}
       {debugMode && (
         <button
           onClick={toggleDebugPanel}
           aria-label="Toggle LLM Debug Panel"
           title="Toggle LLM Debug Panel (D)"
-          style={{
-            ...iconBtnStyle,
-            background: debugPanelOpen ? 'rgba(251,191,36,0.15)' : 'none',
-            color: debugPanelOpen ? '#FBBF24' : 'var(--t3)',
-          }}
+          className={cn('btn-ghost-app', debugPanelOpen && 'text-amber-400')}
+          style={{ color: debugPanelOpen ? '#FBBF24' : undefined, background: debugPanelOpen ? 'rgba(251,191,36,0.15)' : undefined }}
         >
           🐛
         </button>
       )}
 
       {/* Mermaid Export */}
-      <button
-        onClick={() => openModal('mermaid')}
-        title="Export Mermaid"
-        style={iconBtnStyle}
-        aria-label="Export Mermaid diagram"
-      >
+      <button onClick={() => openModal('mermaid')} title="Export Mermaid" className="btn-ghost-app" aria-label="Export Mermaid diagram">
         ⬡
       </button>
 
       {/* Settings */}
-      <button
-        onClick={() => openModal('settings')}
-        title="LLM Settings (,)"
-        aria-label="LLM Settings"
-        style={iconBtnStyle}
-      >
+      <button onClick={() => openModal('settings')} title="LLM Settings (,)" className="btn-ghost-app" aria-label="LLM Settings">
         ⚙
       </button>
 
@@ -122,71 +109,38 @@ export const TopBar: React.FC = () => {
       <button
         onClick={() => isRunning ? stop() : start()}
         aria-label={isRunning ? t('simulation.stop', 'Stop') : t('simulation.start', 'Symulacja')}
+        className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold transition-colors border"
         style={{
-          ...iconBtnStyle,
-          padding: '4px 10px',
-          borderRadius: '6px',
-          fontSize: '12px',
-          fontWeight: 600,
-          background: isRunning
-            ? 'rgba(248,113,113,0.15)'
-            : 'rgba(52,211,153,0.15)',
+          background: isRunning ? 'rgba(248,113,113,0.15)' : 'rgba(52,211,153,0.15)',
           color: isRunning ? '#F87171' : '#34D399',
-          border: `1px solid ${isRunning ? 'rgba(248,113,113,0.3)' : 'rgba(52,211,153,0.3)'}`,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '4px',
+          borderColor: isRunning ? 'rgba(248,113,113,0.3)' : 'rgba(52,211,153,0.3)',
+          cursor: 'pointer',
         }}
       >
-        {isRunning ? '■' : '▶'} {isRunning ? t('simulation.stop', 'Stop') : t('simulation.start', 'Symulacja')}
+        <span>{isRunning ? '■' : '▶'}</span>
+        <span className="hidden sm:inline">{isRunning ? t('simulation.stop', 'Stop') : t('simulation.start', 'Symulacja')}</span>
       </button>
 
       {/* Lang toggle */}
-      <button
-        onClick={toggleLang}
-        aria-label={`Language: ${lang.toUpperCase()}`}
-        style={iconBtnStyle}
-      >
+      <button onClick={toggleLang} aria-label={`Language: ${lang.toUpperCase()}`} className="btn-ghost-app hidden sm:flex">
         {lang.toUpperCase()}
       </button>
 
       {/* Theme toggle */}
-      <button
-        onClick={toggleTheme}
-        aria-label={`Theme: ${theme}`}
-        style={iconBtnStyle}
-      >
+      <button onClick={toggleTheme} aria-label={`Theme: ${theme}`} className="btn-ghost-app">
         {theme === 'dark' ? '☀' : '🌙'}
       </button>
     </header>
   )
 }
 
-const iconBtnStyle: React.CSSProperties = {
-  background: 'none',
-  border: 'none',
-  cursor: 'pointer',
-  padding: '4px 8px',
-  borderRadius: '6px',
-  fontSize: '13px',
-  color: 'var(--t2)',
-  transition: 'background 0.15s',
-  display: 'flex',
-  alignItems: 'center',
-}
-
 const HudCell: React.FC<{ label: string; value: string; color: string }> = ({ label, value, color }) => (
   <div
-    style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      padding: '2px 10px',
-      borderRight: '1px solid var(--border)',
-      minWidth: '60px',
-    }}
+    className="flex flex-col items-center px-2.5 py-0.5 min-w-[56px]"
+    style={{ borderRight: '1px solid var(--border)' }}
   >
-    <span style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--t4)' }}>{label}</span>
-    <span style={{ fontSize: '11px', fontWeight: 600, color, lineHeight: 1.2, whiteSpace: 'nowrap' }}>{value}</span>
+    <span className="text-[9px] font-bold uppercase tracking-widest" style={{ color: 'var(--t4)' }}>{label}</span>
+    <span className="text-[11px] font-semibold leading-tight whitespace-nowrap" style={{ color }}>{value}</span>
   </div>
 )
+
