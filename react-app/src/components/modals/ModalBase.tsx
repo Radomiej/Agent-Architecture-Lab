@@ -30,13 +30,8 @@ export const ModalBase: React.FC<ModalBaseProps> = ({ modalId, title, width = 72
 
   return (
     <div
-      style={{
-        position: 'fixed', inset: 0, zIndex: 1000,
-        background: 'rgba(0,0,0,0.65)',
-        backdropFilter: 'blur(4px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: '24px',
-      }}
+      className="fixed inset-0 z-[1000] flex items-center justify-center p-4 sm:p-6"
+      style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)' }}
       onClick={(e) => { if (e.target === e.currentTarget) closeModal() }}
       role="presentation"
     >
@@ -46,37 +41,36 @@ export const ModalBase: React.FC<ModalBaseProps> = ({ modalId, title, width = 72
         aria-modal="true"
         aria-label={title}
         tabIndex={-1}
+        className="flex flex-col w-full rounded-2xl overflow-hidden outline-none"
         style={{
-          width: '100%', maxWidth: width,
+          maxWidth: width,
           maxHeight: '90vh',
           background: 'var(--bg-panel)',
           border: '1px solid var(--border)',
-          borderRadius: '16px',
-          display: 'flex', flexDirection: 'column',
-          overflow: 'hidden',
-          outline: 'none',
         }}
       >
         {/* Header */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '14px 20px', borderBottom: '1px solid var(--border)', flexShrink: 0,
-        }}>
-          <h2 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: 'var(--t1)' }}>{title}</h2>
+        <div
+          className="flex items-center justify-between px-5 py-3.5 shrink-0"
+          style={{ borderBottom: '1px solid var(--border)' }}
+        >
+          <h2 className="m-0 text-[15px] font-bold" style={{ color: 'var(--t1)' }}>{title}</h2>
           <button
             onClick={closeModal}
             aria-label="Close"
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--t3)', fontSize: '20px', lineHeight: 1, padding: '4px' }}
+            className="btn-ghost-app text-xl leading-none p-1"
+            style={{ color: 'var(--t3)' }}
           >
             ×
           </button>
         </div>
 
         {/* Body */}
-        <div style={{ flex: 1, overflowY: 'auto' }}>
+        <div className="flex-1 overflow-y-auto">
           {children}
         </div>
       </div>
     </div>
   )
 }
+

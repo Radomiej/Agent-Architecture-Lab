@@ -38,6 +38,8 @@ interface UiStore {
   agentPaletteSearch: string
   selectedAgentId: string | null
   selectedPresetId: string | null
+  leftDrawerOpen: boolean
+  rightDrawerOpen: boolean
   setTheme: (theme: Theme) => void
   setLang: (lang: Lang) => void
   toggleTheme: () => void
@@ -48,6 +50,8 @@ interface UiStore {
   setSearch: (q: string) => void
   selectAgent: (id: string | null) => void
   selectPreset: (id: string | null) => void
+  setLeftDrawer: (open: boolean) => void
+  setRightDrawer: (open: boolean) => void
 }
 
 const initialTheme = readTheme()
@@ -64,6 +68,8 @@ export const useUiStore = create<UiStore>((set) => ({
   agentPaletteSearch: '',
   selectedAgentId: null,
   selectedPresetId: null,
+  leftDrawerOpen: false,
+  rightDrawerOpen: false,
 
   setTheme: (theme) => {
     try { localStorage.setItem('acV32_theme', theme) } catch { /* noop */ }
@@ -99,6 +105,26 @@ export const useUiStore = create<UiStore>((set) => ({
   setSidebarTab: (sidebarTab) => set({ sidebarTab }),
   setSearch: (agentPaletteSearch) => set({ agentPaletteSearch }),
 
-  selectAgent: (id) => set({ selectedAgentId: id, selectedPresetId: null }),
-  selectPreset: (id) => set({ selectedPresetId: id, selectedAgentId: null }),
+  selectAgent: (id) => set((s) => {
+    // On mobile (left drawer open), auto-navigate to right panel
+    const shouldNavigate = id !== null && s.leftDrawerOpen
+    return {
+      selectedAgentId: id,
+      selectedPresetId: null,
+      leftDrawerOpen: shouldNavigate ? false : s.leftDrawerOpen,
+      rightDrawerOpen: shouldNavigate ? true : s.rightDrawerOpen,
+    }
+  }),
+  selectPreset: (id) => set((s) => {
+    const shouldNavigate = id !== null && s.leftDrawerOpen
+    return {
+      selectedPresetId: id,
+      selectedAgentId: null,
+      leftDrawerOpen: shouldNavigate ? false : s.leftDrawerOpen,
+      rightDrawerOpen: shouldNavigate ? true : s.rightDrawerOpen,
+    }
+  }),
+
+  setLeftDrawer: (open) => set({ leftDrawerOpen: open }),
+  setRightDrawer: (open) => set({ rightDrawerOpen: open }),
 }))

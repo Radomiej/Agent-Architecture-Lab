@@ -10,13 +10,14 @@ import { CostModal } from './components/modals/CostModal'
 import { MermaidModal } from './components/modals/MermaidModal'
 import { LLMSettingsModal } from './components/modals/LLMSettingsModal'
 import { DebugPanel } from './components/debug/DebugPanel'
+import { MobileNav } from './components/layout/MobileNav'
 import { useUiStore } from './store/uiStore'
 import { useCanvasStore } from './store/canvasStore'
 import { useSimulationStore } from './store/simulationStore'
 
 function AppLayout() {
   useTheme()
-  const { openModal, activeModal, closeModal } = useUiStore()
+  const { openModal, activeModal, closeModal, leftDrawerOpen, rightDrawerOpen, setLeftDrawer, setRightDrawer } = useUiStore()
   const { selected, removeNode } = useCanvasStore()
   const { toggleDebugPanel } = useSimulationStore()
 
@@ -28,6 +29,8 @@ function AppLayout() {
         || (document.activeElement as HTMLElement)?.isContentEditable
 
       if (e.key === 'Escape' && activeModal) { closeModal(); return }
+      if (e.key === 'Escape' && leftDrawerOpen) { setLeftDrawer(false); return }
+      if (e.key === 'Escape' && rightDrawerOpen) { setRightDrawer(false); return }
       if (isInput || activeModal) return
 
       if (e.key === 'k' || e.key === 'K') { openModal('cost'); return }
@@ -35,7 +38,6 @@ function AppLayout() {
       if (e.key === ',') { openModal('settings'); return }
       if (e.key === 'd' || e.key === 'D') { toggleDebugPanel(); return }
 
-      // Delete only (not Backspace - avoid conflicting with browser back navigation)
       if (e.key === 'Delete' && selected.length > 0) {
         e.preventDefault()
         selected.forEach(id => removeNode(id))
@@ -43,51 +45,81 @@ function AppLayout() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [openModal, closeModal, activeModal, selected, removeNode, toggleDebugPanel])
+  }, [openModal, closeModal, activeModal, selected, removeNode, toggleDebugPanel, leftDrawerOpen, rightDrawerOpen, setLeftDrawer, setRightDrawer])
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100vh',
-        overflow: 'hidden',
-        fontFamily: 'var(--ff-sans)',
-        color: 'var(--t1)',
-        background: 'var(--bg0)',
-      }}
-    >
+    <div className="flex flex-col h-screen overflow-hidden font-sans" style={{ color: 'var(--t1)', background: 'var(--bg0)' }}>
       {/* Skip link for accessibility */}
       <a
         href="#canvas"
-        style={{
-          position: 'absolute',
-          left: '-999px',
-          top: 'auto',
-          width: '1px',
-          height: '1px',
-          overflow: 'hidden',
-        }}
-        onFocus={(e) => { (e.currentTarget as HTMLElement).style.cssText = 'position:fixed;top:0;left:0;z-index:9999;padding:8px 16px;background:var(--accent);color:#fff;font-size:14px' }}
-        onBlur={(e) => { (e.currentTarget as HTMLElement).style.cssText = 'position:absolute;left:-999px;top:auto;width:1px;height:1px;overflow:hidden' }}
+        className="sr-only focus:not-sr-only focus:fixed focus:top-0 focus:left-0 focus:z-[9999] focus:px-4 focus:py-2 focus:rounded-br-lg focus:text-sm"
+        style={{ background: 'var(--accent)', color: '#fff' }}
       >
         Skip to canvas
       </a>
 
       <TopBar />
 
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        <LeftSidebar />
+      {/* Mobile drawer: Left sidebar — stops above MobileNav (bottom-14), starts below TopBar (top-12) */}
+      {leftDrawerOpen && (
+        <>
+          <div
+            data-testid="left-drawer-backdrop"
+            aria-label="Close menu"
+            className="fixed inset-x-0 top-0 bottom-14 z-[45] bg-black/50 backdrop-blur-sm md:hidden"
+            onClick={() => setLeftDrawer(false)}
+          />
+          <div
+            className="fixed left-0 top-12 bottom-14 z-[50] w-72 flex flex-col shadow-2xl animate-[slideInLeft_0.22s_ease-out] md:hidden overflow-hidden"
+            style={{ background: 'var(--bg-panel)' }}
+          >
+            <LeftSidebar />
+          </div>
+        </>
+      )}
+
+      {/* Mobile drawer: Right sidebar — stops above MobileNav (bottom-14), starts below TopBar (top-12) */}
+      {rightDrawerOpen && (
+        <>
+          <div
+            data-testid="right-drawer-backdrop"
+            aria-label="Close menu"
+            className="fixed inset-x-0 top-0 bottom-14 z-[45] bg-black/50 backdrop-blur-sm md:hidden"
+            onClick={() => setRightDrawer(false)}
+          />
+          <div
+            className="fixed right-0 top-12 bottom-14 z-[50] w-80 flex flex-col shadow-2xl animate-[slideInRight_0.22s_ease-out] md:hidden overflow-hidden"
+            style={{ background: 'var(--bg-panel)' }}
+          >
+            <RightSidebar />
+          </div>
+        </>
+      )}
+
+      {/* Desktop 3-column layout */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left sidebar — hidden on mobile, shown on md+ */}
+        <div className="hidden md:flex md:flex-col" style={{ width: 260, minWidth: 260, borderRight: '1px solid var(--border)', background: 'var(--bg-panel)' }}>
+          <LeftSidebar />
+        </div>
+
         <CanvasArea />
-        <RightSidebar />
+
+        {/* Right sidebar — hidden on mobile, shown on md+ */}
+        <div className="hidden md:flex md:flex-col" style={{ width: 300, minWidth: 300, borderLeft: '1px solid var(--border)', background: 'var(--bg-panel)' }}>
+          <RightSidebar />
+        </div>
       </div>
+
+      {/* Mobile bottom navigation */}
+      <MobileNav />
 
       {/* Modals */}
       <CostModal />
       <MermaidModal />
       <LLMSettingsModal />
 
-      {/* Debug panel (fixed bottom drawer) */}
+      {/* Debug panel */}
       <DebugPanel />
     </div>
   )
@@ -95,10 +127,15 @@ function AppLayout() {
 
 function App() {
   return (
-    <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#06060A', color: '#E6E8EE', fontSize: '14px' }}>Loading...</div>}>
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-screen text-sm" style={{ background: '#06060A', color: '#E6E8EE' }}>
+        Loading...
+      </div>
+    }>
       <AppLayout />
     </Suspense>
   )
 }
 
 export default App
+

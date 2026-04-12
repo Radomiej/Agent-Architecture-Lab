@@ -6,29 +6,18 @@ interface VerdictPanelProps {
 }
 
 export const VerdictPanel: React.FC<VerdictPanelProps> = ({ green, red }) => (
-  <div
-    style={{
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr',
-      gap: '8px',
-      marginTop: '8px',
-    }}
-  >
+  <div className="grid grid-cols-2 gap-2 mt-2">
     <div
-      style={{
-        background: 'rgba(52,211,153,0.08)',
-        border: '1px solid rgba(52,211,153,0.2)',
-        borderRadius: '8px',
-        padding: '10px 12px',
-      }}
+      className="rounded-lg p-2.5"
+      style={{ background: 'rgba(52,211,153,0.08)', border: '1px solid rgba(52,211,153,0.2)' }}
     >
-      <div style={{ fontSize: '11px', fontWeight: 700, color: '#34D399', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+      <div className="text-[11px] font-bold uppercase tracking-[0.04em] mb-1.5" style={{ color: '#34D399' }}>
         Kiedy uzywac
       </div>
-      <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+      <ul className="m-0 p-0 list-none flex flex-col gap-1">
         {green.map((item, i) => (
-          <li key={i} style={{ display: 'flex', gap: '6px', alignItems: 'flex-start', fontSize: '12px', color: 'var(--t2)' }}>
-            <span style={{ color: '#34D399', flexShrink: 0, marginTop: '1px' }}>✓</span>
+          <li key={i} className="flex gap-1.5 items-start text-xs" style={{ color: 'var(--t2)' }}>
+            <span className="shrink-0 mt-px" style={{ color: '#34D399' }}>✓</span>
             {item}
           </li>
         ))}
@@ -36,20 +25,16 @@ export const VerdictPanel: React.FC<VerdictPanelProps> = ({ green, red }) => (
     </div>
 
     <div
-      style={{
-        background: 'rgba(248,113,113,0.08)',
-        border: '1px solid rgba(248,113,113,0.2)',
-        borderRadius: '8px',
-        padding: '10px 12px',
-      }}
+      className="rounded-lg p-2.5"
+      style={{ background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.2)' }}
     >
-      <div style={{ fontSize: '11px', fontWeight: 700, color: '#F87171', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+      <div className="text-[11px] font-bold uppercase tracking-[0.04em] mb-1.5" style={{ color: '#F87171' }}>
         Kiedy nie uzywac
       </div>
-      <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+      <ul className="m-0 p-0 list-none flex flex-col gap-1">
         {red.map((item, i) => (
-          <li key={i} style={{ display: 'flex', gap: '6px', alignItems: 'flex-start', fontSize: '12px', color: 'var(--t2)' }}>
-            <span style={{ color: '#F87171', flexShrink: 0, marginTop: '1px' }}>✗</span>
+          <li key={i} className="flex gap-1.5 items-start text-xs" style={{ color: 'var(--t2)' }}>
+            <span className="shrink-0 mt-px" style={{ color: '#F87171' }}>✗</span>
             {item}
           </li>
         ))}
@@ -57,3 +42,4 @@ export const VerdictPanel: React.FC<VerdictPanelProps> = ({ green, red }) => (
     </div>
   </div>
 )
+

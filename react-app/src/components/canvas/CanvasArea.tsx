@@ -94,14 +94,12 @@ export const CanvasArea: React.FC = () => {
   return (
     <main
       ref={canvasRef}
-      className="canvas-bg"
+      className="canvas-bg relative flex-1 overflow-hidden"
       style={{
-        flex: 1,
-        position: 'relative',
-        overflow: 'hidden',
         background: 'var(--bg1)',
         cursor: panning ? 'grabbing' : 'default',
       }}
+      id="canvas"
       onMouseDown={handleCanvasMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
@@ -113,10 +111,8 @@ export const CanvasArea: React.FC = () => {
     >
       {/* Grid dots */}
       <div
+        className="absolute inset-0 pointer-events-none"
         style={{
-          position: 'absolute',
-          inset: 0,
-          pointerEvents: 'none',
           backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)',
           backgroundSize: `${GRID_SIZE * zoom}px ${GRID_SIZE * zoom}px`,
           backgroundPosition: `${pan.x % (GRID_SIZE * zoom)}px ${pan.y % (GRID_SIZE * zoom)}px`,
@@ -125,9 +121,8 @@ export const CanvasArea: React.FC = () => {
 
       {/* Transform container */}
       <div
+        className="absolute inset-0"
         style={{
-          position: 'absolute',
-          inset: 0,
           transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
           transformOrigin: '0 0',
         }}
@@ -165,15 +160,14 @@ export const CanvasArea: React.FC = () => {
       {/* Marquee selection */}
       {marquee && (
         <div
+          className="absolute pointer-events-none"
           style={{
-            position: 'absolute',
             left: marquee.x * zoom + pan.x,
             top: marquee.y * zoom + pan.y,
             width: marquee.w * zoom,
             height: marquee.h * zoom,
             border: '1px dashed var(--accent1)',
             background: 'rgba(129,140,248,0.08)',
-            pointerEvents: 'none',
           }}
         />
       )}
@@ -181,37 +175,21 @@ export const CanvasArea: React.FC = () => {
       {/* Empty state hint */}
       {nodes.length === 0 && (
         <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexDirection: 'column',
-            gap: '8px',
-            color: 'var(--t4)',
-            fontSize: '14px',
-            pointerEvents: 'none',
-          }}
+          className="absolute inset-0 flex items-center justify-center flex-col gap-2 pointer-events-none text-sm"
+          style={{ color: 'var(--t4)' }}
         >
-          <span style={{ fontSize: '40px', opacity: 0.3 }}>⬡</span>
+          <span className="text-5xl opacity-30">⬡</span>
           <span>Przeciagnij agenta z lewego panelu na canvas</span>
         </div>
       )}
 
       {/* Zoom indicator */}
       <div
+        className="absolute bottom-3 right-3 text-[11px] px-2 py-0.5 rounded pointer-events-none"
         style={{
-          position: 'absolute',
-          bottom: '12px',
-          right: '12px',
-          fontSize: '11px',
           color: 'var(--t4)',
           background: 'var(--bg-panel)',
-          padding: '3px 8px',
-          borderRadius: '4px',
           border: '1px solid var(--border)',
-          pointerEvents: 'none',
         }}
       >
         {Math.round(zoom * 100)}%

@@ -103,20 +103,13 @@ export const AgentNode: React.FC<AgentNodeProps> = ({
 
         {/* Label below node */}
         <div
+          className="absolute text-[9px] font-semibold text-center pointer-events-none overflow-hidden text-ellipsis whitespace-nowrap"
           style={{
-            position: 'absolute',
             top: NODE_SIZE + 4,
             left: '50%',
             transform: 'translateX(-50%)',
-            fontSize: '9px',
-            fontWeight: 600,
-            color: 'var(--t2)',
-            whiteSpace: 'nowrap',
             maxWidth: 80,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            textAlign: 'center',
-            pointerEvents: 'none',
+            color: 'var(--t2)',
           }}
         >
           {agentDef.name}
@@ -125,20 +118,14 @@ export const AgentNode: React.FC<AgentNodeProps> = ({
         {/* Completed checkmark */}
         {isCompleted && (
           <div
+            className="absolute flex items-center justify-center text-[8px] font-bold rounded-full"
             style={{
-              position: 'absolute',
               top: -6,
               right: -6,
               width: 14,
               height: 14,
-              borderRadius: '50%',
               background: '#34D399',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '8px',
               color: '#000',
-              fontWeight: 700,
             }}
           >
             ✓
@@ -148,13 +135,11 @@ export const AgentNode: React.FC<AgentNodeProps> = ({
         {/* Active pulse ring */}
         {isActive && (
           <div
+            className="absolute inset-[-4px] pointer-events-none"
             style={{
-              position: 'absolute',
-              inset: -4,
               borderRadius: '18px',
               border: '1.5px solid rgba(52,211,153,0.4)',
               animation: 'pulse-ring 1.5s ease-in-out infinite',
-              pointerEvents: 'none',
             }}
           />
         )}
@@ -165,23 +150,19 @@ export const AgentNode: React.FC<AgentNodeProps> = ({
         <>
           {/* Backdrop to dismiss */}
           <div
-            style={{ position: 'fixed', inset: 0, zIndex: 1900 }}
+            className="fixed inset-0 z-[1900]"
             onClick={closeCtxMenu}
             onContextMenu={(e) => { e.preventDefault(); closeCtxMenu() }}
           />
           <div
             role="menu"
             aria-label="Agent context menu"
+            className="fixed z-[2000] rounded-lg p-1 min-w-[180px]"
             style={{
-              position: 'fixed',
               left: ctxMenu.x,
               top: ctxMenu.y,
-              zIndex: 2000,
-              background: 'var(--bg-panel, rgba(15,15,24,0.97))',
+              background: 'var(--bg-panel)',
               border: '1px solid var(--border)',
-              borderRadius: '8px',
-              padding: '4px',
-              minWidth: '180px',
               boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
             }}
           >
@@ -190,27 +171,32 @@ export const AgentNode: React.FC<AgentNodeProps> = ({
                 role="menuitem"
                 type="button"
                 onClick={handleRunLLM}
-                style={menuItemStyle}
+                className="flex items-center gap-2 w-full px-2.5 py-1.5 rounded-md border-0 bg-transparent cursor-pointer text-sm text-left hover:bg-[var(--state-hover)]"
+                style={{ color: 'var(--t1)' }}
               >
                 <span>🤖</span>
                 <span>Run with LLM</span>
               </button>
             )}
             {(!debugMode || !apiKey) && (
-              <div style={{ ...menuItemStyle, opacity: 0.5, cursor: 'default', pointerEvents: 'none' } as React.CSSProperties}>
+              <div
+                className="flex items-center gap-2 px-2.5 py-1.5 text-sm opacity-50 select-none"
+                style={{ color: 'var(--t1)' }}
+              >
                 <span>🤖</span>
                 <span>Run with LLM</span>
-                <span style={{ fontSize: '10px', color: 'var(--t4)', marginLeft: 'auto' }}>
+                <span className="text-[10px] ml-auto" style={{ color: 'var(--t4)' }}>
                   {!apiKey ? 'No key' : 'Debug off'}
                 </span>
               </div>
             )}
-            <div style={{ height: '1px', background: 'var(--border)', margin: '4px 0' }} />
+            <div className="h-px my-1" style={{ background: 'var(--border)' }} />
             <button
               role="menuitem"
               type="button"
               onClick={closeCtxMenu}
-              style={{ ...menuItemStyle, color: 'var(--t4)' }}
+              className="flex items-center gap-2 w-full px-2.5 py-1.5 rounded-md border-0 bg-transparent cursor-pointer text-sm text-left hover:bg-[var(--state-hover)]"
+              style={{ color: 'var(--t4)' }}
             >
               <span>✕</span>
               <span>Close</span>
@@ -227,19 +213,4 @@ function hexToRgb(hex: string): string {
   const g = parseInt(hex.slice(3, 5), 16)
   const b = parseInt(hex.slice(5, 7), 16)
   return `${r},${g},${b}`
-}
-
-const menuItemStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '8px',
-  width: '100%',
-  padding: '7px 10px',
-  borderRadius: '6px',
-  border: 'none',
-  background: 'none',
-  cursor: 'pointer',
-  fontSize: '13px',
-  color: 'var(--t1)',
-  textAlign: 'left',
 }
