@@ -94,5 +94,137 @@
     "mid": "Planning + 4x build + 3x QA. Building microservices.",
     "green": ["Microservices architecture", "Service decomposition", "API design"],
     "red": ["Monolith refactor", "Simple apps", "Tight deadlines"]
+  },
+  "cascade": {
+    "name": "Cascade Cost",
+    "mid": "Haiku -> Sonnet -> Opus. Cost optimization through model cascading.",
+    "green": ["Cost optimization", "High-volume tasks", "Mixed complexity tasks"],
+    "red": ["Critical-only tasks", "Latency-sensitive", "No budget constraints"]
+  },
+  "test_suite": {
+    "name": "Testing Suite",
+    "mid": "Orchestrator + 3x QA + Manager. Comprehensive testing pipeline.",
+    "green": ["Comprehensive testing", "Multiple QA perspectives", "Release readiness"],
+    "red": ["Quick unit tests", "TDD during dev", "Without a manager"]
+  },
+  "review": {
+    "name": "Code Review",
+    "mid": "Analysis -> build -> review. Code review with multiple perspectives.",
+    "green": ["Pull request reviews", "Architecture reviews", "Security-aware review"],
+    "red": ["Quick hotfixes", "Simple patches", "Without architectural context"]
+  },
+  "design_sys": {
+    "name": "Design System",
+    "mid": "UX + docs research -> designer + FE -> docs. Building a design system.",
+    "green": ["Design system from scratch", "Component library", "UX consistency"],
+    "red": ["One-off components", "Backend-only projects", "Without a designer"]
+  },
+  "api_modern": {
+    "name": "API Modernization",
+    "mid": "Analysis + research -> backend + integrator -> QA. API modernization.",
+    "green": ["Legacy API migration", "REST -> GraphQL", "API versioning"],
+    "red": ["Greenfield API", "Frontend changes", "Database migration"]
+  },
+  "ui_overhaul": {
+    "name": "UI/UX Overhaul",
+    "mid": "2x research -> analysis -> designer + FE -> QA. UI/UX redesign.",
+    "green": ["Full UI redesign", "UX research-driven", "Design + implementation"],
+    "red": ["Backend refactor", "Minor tweaks", "No user research"]
+  },
+  "standard": {
+    "name": "Standard Dev",
+    "mid": "Orchestrator + planning + research + build + QA. Standard dev pipeline.",
+    "green": ["Medium features", "Well-defined tasks", "Balanced team"],
+    "red": ["Enterprise scale", "Research-heavy", "HITL required"]
+  },
+  "data_pipe": {
+    "name": "Data Pipeline",
+    "mid": "Planning -> research -> backend + feature -> integrator. Data pipeline.",
+    "green": ["ETL pipelines", "Data integrations", "Analytics features"],
+    "red": ["Real-time streaming", "ML models", "Data science"]
+  },
+  "research": {
+    "name": "Research Swarm",
+    "mid": "6 researchers + critic + synthesizer. Maximum parallel research.",
+    "green": ["Deep domain research", "Competitive analysis", "Unknown technology"],
+    "red": ["Quick lookups", "Production code", "Implementation-only"]
+  },
+  "legacy": {
+    "name": "Legacy Refactor",
+    "mid": "Analysis + research -> 3x build -> 2x QA. Legacy system refactor.",
+    "green": ["Legacy codebase", "Tech debt reduction", "Safe migration"],
+    "red": ["New systems", "Greenfield", "No tests"]
+  },
+  "saas": {
+    "name": "Full-Stack SaaS",
+    "mid": "Research -> build (3 roles) -> integration -> QA. Complete SaaS product.",
+    "green": ["New SaaS product", "Full-stack with auth", "MVP with integrations"],
+    "red": ["Internal tools", "Mobile-only", "No backend"]
+  },
+  "ab_test_lab": {
+    "name": "A/B Test Lab",
+    "mid": "Statistician + variants + p-hacking red team. Rigorous A/B testing.",
+    "green": ["A/B tests", "UX experiments", "Data-driven decisions"],
+    "red": ["No user data", "Quick MVP", "No statistics"]
+  },
+  "tech_writing_pipe": {
+    "name": "Tech Writing Pipeline",
+    "mid": "Outline + research -> writer + diagrams + SEO. Technical documentation pipeline.",
+    "green": ["Technical documentation", "API docs", "Developer guides"],
+    "red": ["Production code", "Marketing copy", "Quick notes"]
+  },
+  "perf_squad": {
+    "name": "Performance Squad",
+    "mid": "Five Minds adversarial + 3 layer specs. Performance optimization with debate.",
+    "green": ["Performance issues", "Bottleneck analysis", "Load testing planning"],
+    "red": ["Feature development", "Security audits", "Documentation"]
+  },
+  "migration_crew": {
+    "name": "Migration Crew",
+    "mid": "3 parallel explorers + HITL gate. Safe migration with human oversight.",
+    "green": ["System migrations", "Database migrations", "Cloud migrations"],
+    "red": ["Greenfield projects", "Simple deployments", "No risk"]
+  },
+  "fullstack_premium": {
+    "name": "Full-Stack Premium",
+    "mid": "7-agent + db_architect + observability + UX research, 12 agents. Premium fullstack.",
+    "green": ["Enterprise fullstack", "Production grade", "Complete architecture"],
+    "red": ["Quick MVP", "Simple CRUD", "No observability"]
+  },
+  "security_multi_vector": {
+    "name": "Multi-Vector Security",
+    "mid": "5 parallel scanners + STRIDE + release gate. Multi-vector security audit.",
+    "green": ["Security audits", "Pre-release security", "Compliance check"],
+    "red": ["Feature development", "Performance tuning", "Documentation only"]
+  },
+  "prd_to_launch": {
+    "name": "PRD to Launch",
+    "mid": "JTBD -> PRD -> tickets + designs + copy + GTM. From concept to launch.",
+    "green": ["New products", "Product launches", "Cross-functional delivery"],
+    "red": ["Tech debt", "Internal tools", "Backend-only features"]
+  },
+  "kb_constructor": {
+    "name": "KB Constructor",
+    "mid": "4 ingesters + dedup + writer + critic. Building a knowledge base.",
+    "green": ["Knowledge bases", "Documentation portals", "Content aggregation"],
+    "red": ["Real-time content", "Code generation", "Security audits"]
+  },
+  "data_analysis_pipe": {
+    "name": "Data Analysis Pipeline",
+    "mid": "collect -> clean -> EDA + SQL -> model -> report. Full analytics pipeline.",
+    "green": ["Data analysis", "Business intelligence", "Statistical reporting"],
+    "red": ["Real-time analytics", "ML production", "Simple queries"]
+  },
+  "incident_war_room": {
+    "name": "Incident War Room",
+    "mid": "Telemetry + logs + diff parallel -> Devil -> rollback gate. Incident management.",
+    "green": ["Production incidents", "Outage response", "Root cause analysis"],
+    "red": ["Planned maintenance", "Feature work", "Development debugging"]
+  },
+  "five_minds_strategic": {
+    "name": "Five Minds Strategic",
+    "mid": "4 research + 5 experts + Devil + HITL. Strategic debate with research.",
+    "green": ["Strategic decisions", "Market entry", "Architecture choices with research"],
+    "red": ["Quick tactical decisions", "Implementation-only", "Small budget"]
   }
 }

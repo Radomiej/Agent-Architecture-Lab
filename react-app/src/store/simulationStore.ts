@@ -6,17 +6,10 @@ import { useCanvasStore } from './canvasStore'
 import { AD_MAP } from '../data/agents'
 import { buildAgentContext } from '../utils/buildAgentContext'
 
-export interface HitlGateOption {
-  id: 'A' | 'B' | 'C'
-  label: string
-  desc: string
-}
+export type HitlOptionId = 'A' | 'B' | 'C'
 
-export const HITL_GATE_OPTIONS: HitlGateOption[] = [
-  { id: 'A', label: 'Kontynuuj plan',        desc: 'Kontynuuj zgodnie z aktualnym planem.' },
-  { id: 'B', label: 'Dostosuj zakres',       desc: 'Zmień zakres lub podejście przed kontynuacją.' },
-  { id: 'C', label: 'Zatrzymaj i przejrzyj', desc: 'Zatrzymaj symulację i przejrzyj dotychczasowe wyniki.' },
-]
+/** IDs of available HITL gate options. Labels/descriptions come from i18n JSON (hitl.options.*). */
+export const HITL_GATE_OPTION_IDS: readonly HitlOptionId[] = ['A', 'B', 'C']
 
 interface SimulationStore {
   isRunning: boolean

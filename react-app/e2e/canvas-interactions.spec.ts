@@ -111,7 +111,7 @@ test.describe('Canvas interactions', () => {
 
   test('M shortcut opens the Mermaid export modal', async ({ page }) => {
     await page.keyboard.press('m')
-    await expect(page.getByRole('dialog', { name: /Export Mermaid Diagram/i })).toBeVisible()
+    await expect(page.getByRole('dialog', { name: /Mermaid/i })).toBeVisible()
   })
 
   test('D shortcut toggles the LLM debug panel open', async ({ page }) => {

@@ -42,6 +42,8 @@
     "modelMix": "Rozklad modeli",
     "perAgent": "Koszt per agent",
     "perPhase": "Rozklad kosztow na fazy",
+    "tableAgent": "Agent",
+    "tableP50": "Koszt p50",
     "severity": {
       "safe": "Bezpieczny",
       "warn": "Uwaga",
@@ -61,6 +63,7 @@
   "sidebar": {
     "agentDetails": "Szczegoly agenta",
     "presetDetails": "Szczegoly presetu",
+    "emptyHint": "Kliknij agenta lub preset aby zobaczyc szczegoly",
     "tools": "NARZEDZIA",
     "model": "MODEL",
     "phase": "FAZA",
@@ -74,7 +77,10 @@
     "whenToUse": "KIEDY UZYWAC",
     "whenNotToUse": "KIEDY NIE UZYWAC",
     "detailed": "SZCZEGOLOWY OPIS",
-    "similar": "PODOBNI AGENCI"
+    "similar": "PODOBNI AGENCI",
+    "presetNoData": "Brak szczegolowych danych dla tego presetu.",
+    "presetWhenToUse": "KIEDY UZYWAC",
+    "presetWhenNotToUse": "KIEDY NIE UZYWAC"
   },
   "model": {
     "opus": "Opus 4.6",
@@ -108,11 +114,49 @@
     "clone": "Klonuj",
     "create": "Stworz"
   },
+  "hitl": {
+    "title": "HITL Decision Gate",
+    "subtitle": "Decision Presenter — wybierz jak kontynuowac",
+    "description": "Symulacja osiagnela punkt decyzyjny. Wybierz jedna z opcji ponizej, aby okreslic jak zespol agentow powinien kontynuowac.",
+    "escHint": "Nacisnij Esc aby zamknac",
+    "options": {
+      "A": { "label": "Kontynuuj plan",        "desc": "Kontynuuj zgodnie z aktualnym planem." },
+      "B": { "label": "Dostosuj zakres",       "desc": "Zmien zakres lub podejscie przed kontynuacja." },
+      "C": { "label": "Zatrzymaj i przejrzyj", "desc": "Zatrzymaj symulacje i przejrzyj dotychczasowe wyniki." }
+    }
+  },
   "mermaid": {
-    "title": "Mermaid Export",
+    "title": "Eksport Mermaid",
+    "modalTitle": "Eksportuj diagram Mermaid",
     "copy": "Kopiuj do schowka",
     "copied": "Skopiowano!",
-    "hint": "Wklej do mermaid.live lub Obsidian"
+    "copyBtn": "Kopiuj do schowka",
+    "hint": "Wklej do mermaid.live lub Obsidian",
+    "noNodes": "Najpierw dodaj agentow na canvas",
+    "nodeCount": "{{nodes}} wezlow · {{connections}} polaczen",
+    "liveHint": "Wklej do mermaid.live lub dowolnego Markdown ze wsparciem Mermaid (GitHub, Notion, Obsidian)"
+  },
+  "settings": {
+    "title": "Ustawienia LLM",
+    "sectionLlm": "Dostawca LLM — dla agentow",
+    "sectionWebSearch": "Narzedzie Web Search — dla agentow badawczych",
+    "apiKey": "Klucz API",
+    "baseUrl": "Bazowy URL",
+    "modelTiers": "ID modeli per warstwa",
+    "debugMode": "Tryb debugowania — pokaz panel logow LLM",
+    "enabled": "Wlaczone",
+    "disabled": "Wylaczone",
+    "testConnection": "Testuj polaczenie",
+    "testing": "Testowanie...",
+    "testOk": "Polaczono",
+    "testFail": "Blad",
+    "getKey": "Pobierz klucz",
+    "showKey": "Pokaz klucz",
+    "hideKey": "Ukryj klucz",
+    "providerLabel": "Dostawca (model Sonar z dostepem do sieci)",
+    "sonarModel": "Model Sonar",
+    "perplexityKey": "Klucz API Perplexity",
+    "openrouterKey": "Klucz API OpenRouter (mozna reuzywac klucza LLM)"
   },
   "creator": {
     "title": "Kreator Agenta",

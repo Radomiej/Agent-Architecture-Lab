@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ModalBase } from './ModalBase'
 import { useCanvasStore } from '../../store/canvasStore'
 import { AD_MAP } from '../../data/agents'
@@ -18,6 +19,7 @@ function sanitize(s: string): string {
 }
 
 export const MermaidModal: React.FC = () => {
+  const { t } = useTranslation()
   const nodes = useCanvasStore((s) => s.nodes)
   const connections = useCanvasStore((s) => s.connections)
   const [copied, setCopied] = useState(false)
@@ -64,17 +66,17 @@ export const MermaidModal: React.FC = () => {
   }
 
   return (
-    <ModalBase modalId="mermaid" title="Export Mermaid Diagram" width={680}>
+    <ModalBase modalId="mermaid" title={t('mermaid.modalTitle')} width={680}>
       <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {!nodes.length ? (
           <p style={{ color: 'var(--t4)', textAlign: 'center', padding: '32px', margin: 0 }}>
-            Add agents to the canvas first
+            {t('mermaid.noNodes')}
           </p>
         ) : (
           <>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '12px', color: 'var(--t3)' }}>
-                {nodes.length} nodes · {connections.length} connections
+                {t('mermaid.nodeCount', { nodes: nodes.length, connections: connections.length })}
               </span>
               <button
                 onClick={handleCopy}
@@ -85,7 +87,7 @@ export const MermaidModal: React.FC = () => {
                   fontSize: '12px', fontWeight: 600, transition: 'all 0.2s',
                 }}
               >
-                {copied ? '✓ Copied!' : '⊕ Copy to clipboard'}
+                {copied ? `✓ ${t('mermaid.copied')}` : `⊕ ${t('mermaid.copyBtn')}`}
               </button>
             </div>
 
@@ -104,7 +106,7 @@ export const MermaidModal: React.FC = () => {
             />
 
             <div style={{ padding: '10px 14px', borderRadius: '8px', background: 'rgba(52,211,153,0.06)', border: '1px solid rgba(52,211,153,0.15)', fontSize: '11px', color: 'var(--t3)' }}>
-              Paste into <a href="https://mermaid.live" target="_blank" rel="noreferrer" style={{ color: '#34D399' }}>mermaid.live</a> or any Markdown with Mermaid support (GitHub, Notion, Obsidian)
+              {t('mermaid.liveHint')}
             </div>
           </>
         )}

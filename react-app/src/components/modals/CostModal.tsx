@@ -59,9 +59,9 @@ export const CostModal: React.FC = () => {
     <ModalBase modalId="cost" title={t('cost.center', 'Cost Command Center')} width={760}>
       {/* Tabs */}
       <div style={{ display: 'flex', gap: '4px', padding: '12px 20px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
-        <button style={tabStyle('overview')} onClick={() => setTab('overview')}>Overview</button>
-        <button style={tabStyle('breakdown')} onClick={() => setTab('breakdown')}>Breakdown</button>
-        <button style={tabStyle('whatif')} onClick={() => setTab('whatif')}>What-if</button>
+        <button style={tabStyle('overview')} onClick={() => setTab('overview')}>{t('cost.overview')}</button>
+        <button style={tabStyle('breakdown')} onClick={() => setTab('breakdown')}>{t('cost.breakdown')}</button>
+        <button style={tabStyle('whatif')} onClick={() => setTab('whatif')}>{t('cost.whatif')}</button>
       </div>
 
       {/* Content */}
@@ -129,16 +129,18 @@ const BreakdownTab: React.FC<{
   onSort: (col: 'agent' | 'p50') => void
   totalP50: number
   totalP90: number
-}> = ({ agents, sortCol, onSort, totalP50, totalP90 }) => (
+}> = ({ agents, sortCol, onSort, totalP50, totalP90 }) => {
+  const { t } = useTranslation()
+  return (
   <div style={{ overflowX: 'auto' }}>
     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
       <thead>
         <tr style={{ borderBottom: '1px solid var(--border)' }}>
-          <Th onClick={() => onSort('agent')} active={sortCol === 'agent'}>Agent</Th>
-          <Th>Model</Th>
-          <Th>Phase</Th>
-          <Th onClick={() => onSort('p50')} active={sortCol === 'p50'}>Cost p50</Th>
-          <Th>Cost p90</Th>
+          <Th onClick={() => onSort('agent')} active={sortCol === 'agent'}>{t('cost.tableAgent')}</Th>
+          <Th>{t('sidebar.model')}</Th>
+          <Th>{t('sidebar.phase')}</Th>
+          <Th onClick={() => onSort('p50')} active={sortCol === 'p50'}>{t('cost.tableP50')}</Th>
+          <Th>{t('cost.p90')}</Th>
         </tr>
       </thead>
       <tbody>
@@ -166,7 +168,8 @@ const BreakdownTab: React.FC<{
       <p style={{ textAlign: 'center', color: 'var(--t4)', padding: '32px', fontSize: '13px' }}>No agents on canvas</p>
     )}
   </div>
-)
+  )
+}
 
 // ── What-if Tab ───────────────────────────────────────────────────────────────
 

@@ -1,9 +1,14 @@
 import { test, expect, type Page } from '@playwright/test'
 
+// Set English locale so tests can match English strings via t()
+async function setEnglishLocale(page: Page) {
+  await page.addInitScript(() => { localStorage.setItem('acV32_lang', 'en') })
+}
+
 // Helper: load Solo preset (2 nodes) so cost/mermaid data is non-empty
 async function loadSoloPreset(page: Page) {
   const sidebar = page.getByRole('complementary', { name: 'Left sidebar' })
-  await sidebar.getByRole('tab', { name: 'Presety' }).click()
+  await sidebar.getByRole('tab', { name: /Presety|Presets/i }).click()
   await sidebar.getByRole('button', { name: 'Solo' }).click()
   await page.getByRole('main', { name: 'Canvas area' }).getByRole('button', { name: /Agent/i }).first().waitFor()
 }
@@ -12,6 +17,7 @@ async function loadSoloPreset(page: Page) {
 
 test.describe('Cost modal', () => {
   test.beforeEach(async ({ page }) => {
+    await setEnglishLocale(page)
     await page.goto('/')
     await expect(page.getByRole('banner')).toBeVisible()
     await expect(page.locator('text=Loading...')).toHaveCount(0)
@@ -102,6 +108,7 @@ test.describe('Cost modal', () => {
 
 test.describe('Mermaid modal', () => {
   test.beforeEach(async ({ page }) => {
+    await setEnglishLocale(page)
     await page.goto('/')
     await expect(page.getByRole('banner')).toBeVisible()
     await expect(page.locator('text=Loading...')).toHaveCount(0)

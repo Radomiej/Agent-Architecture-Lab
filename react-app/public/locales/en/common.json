@@ -42,6 +42,8 @@
     "modelMix": "Model mix",
     "perAgent": "Cost per agent",
     "perPhase": "Cost breakdown by phase",
+    "tableAgent": "Agent",
+    "tableP50": "Cost p50",
     "severity": {
       "safe": "Safe",
       "warn": "Warning",
@@ -61,6 +63,7 @@
   "sidebar": {
     "agentDetails": "Agent details",
     "presetDetails": "Preset details",
+    "emptyHint": "Click an agent or preset to see details",
     "tools": "TOOLS",
     "model": "MODEL",
     "phase": "PHASE",
@@ -74,7 +77,10 @@
     "whenToUse": "WHEN TO USE",
     "whenNotToUse": "WHEN NOT TO USE",
     "detailed": "DETAILED DESCRIPTION",
-    "similar": "SIMILAR AGENTS"
+    "similar": "SIMILAR AGENTS",
+    "presetNoData": "No detailed data available for this preset.",
+    "presetWhenToUse": "WHEN TO USE",
+    "presetWhenNotToUse": "WHEN NOT TO USE"
   },
   "model": {
     "opus": "Opus 4.6",
@@ -108,11 +114,49 @@
     "clone": "Clone",
     "create": "Create"
   },
+  "hitl": {
+    "title": "HITL Decision Gate",
+    "subtitle": "Decision Presenter — choose how to proceed",
+    "description": "The simulation has reached a decision point. Select one of the options below to determine how the agent team should continue.",
+    "escHint": "Press Esc to dismiss",
+    "options": {
+      "A": { "label": "Continue plan",       "desc": "Continue with the current plan as defined." },
+      "B": { "label": "Adjust scope",        "desc": "Adjust scope or approach before continuing." },
+      "C": { "label": "Stop and review",     "desc": "Stop simulation and review results so far." }
+    }
+  },
   "mermaid": {
     "title": "Mermaid Export",
+    "modalTitle": "Export Mermaid Diagram",
     "copy": "Copy to clipboard",
     "copied": "Copied!",
-    "hint": "Paste into mermaid.live or Obsidian"
+    "copyBtn": "Copy to clipboard",
+    "hint": "Paste into mermaid.live or Obsidian",
+    "noNodes": "Add agents to the canvas first",
+    "nodeCount": "{{nodes}} nodes · {{connections}} connections",
+    "liveHint": "Paste into mermaid.live or any Markdown with Mermaid support (GitHub, Notion, Obsidian)"
+  },
+  "settings": {
+    "title": "LLM Settings",
+    "sectionLlm": "LLM Provider — for agents",
+    "sectionWebSearch": "Web Search Tool — for research agents",
+    "apiKey": "API Key",
+    "baseUrl": "Base URL",
+    "modelTiers": "Model IDs per tier",
+    "debugMode": "Debug Mode — show LLM call logs panel",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "testConnection": "Test Connection",
+    "testing": "Testing...",
+    "testOk": "Connected",
+    "testFail": "Failed",
+    "getKey": "Get key",
+    "showKey": "Show key",
+    "hideKey": "Hide key",
+    "providerLabel": "Provider (Sonar model with web access)",
+    "sonarModel": "Sonar Model",
+    "perplexityKey": "Perplexity API Key",
+    "openrouterKey": "OpenRouter API Key (can reuse LLM key)"
   },
   "creator": {
     "title": "Agent Creator",

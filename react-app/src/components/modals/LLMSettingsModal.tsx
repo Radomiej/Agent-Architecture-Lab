@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useUiStore } from '../../store/uiStore'
 import { useLLMStore } from '../../store/llmStore'
 import { testConnection, testWebSearchConnection, COMETAPI_BASE_URL, OPENROUTER_BASE_URL } from '../../services/llmService'
@@ -7,11 +8,6 @@ import { SONAR_MODELS } from '../../types'
 import { ModalBase } from './ModalBase'
 
 const MODEL_TIERS: ModelType[] = ['opus', 'sonnet', 'haiku']
-const TIER_LABELS: Record<ModelType, string> = {
-  opus: 'Opus (complex reasoning)',
-  sonnet: 'Sonnet (balanced)',
-  haiku: 'Haiku (fast / cheap)',
-}
 
 const MODAL_ID = 'settings'
 
@@ -32,6 +28,7 @@ const MODEL_PRESETS: Record<LLMProvider, Partial<Record<ModelType, string[]>>> =
 type TestState = 'idle' | 'testing' | 'ok' | 'error'
 
 const LLMSettingsContent: React.FC = () => {
+  const { t } = useTranslation()
   const { closeModal } = useUiStore()
   const llm = useLLMStore()
 
@@ -89,7 +86,7 @@ const LLMSettingsContent: React.FC = () => {
   }
 
   const testLabel = (s: TestState) =>
-    s === 'testing' ? '⏳ Testing…' : s === 'ok' ? '✓ Connected' : s === 'error' ? '✗ Failed' : 'Test Connection'
+    s === 'testing' ? `⏳ ${t('settings.testing')}` : s === 'ok' ? `✓ ${t('settings.testOk')}` : s === 'error' ? `✗ ${t('settings.testFail')}` : t('settings.testConnection')
 
   const testBtnStyle = (s: TestState): React.CSSProperties => ({
     ...btnStyle,
@@ -106,7 +103,7 @@ const LLMSettingsContent: React.FC = () => {
           SECTION 1 — LLM Provider
           ═══════════════════════════════════════════════════════════════════════ */}
       <div style={sectionBoxStyle}>
-        <div style={sectionTitleStyle}>🤖 LLM Provider — for agents</div>
+        <div style={sectionTitleStyle}>🤖 {t('settings.sectionLlm')}</div>
 
         {/* Provider selector */}
         <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
@@ -144,7 +141,7 @@ const LLMSettingsContent: React.FC = () => {
         )}
 
         {/* API Key */}
-        <label style={labelStyle}>API Key</label>
+        <label style={labelStyle}>{t('settings.apiKey')}</label>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '12px' }}>
           <input
             type={showKey ? 'text' : 'password'}
@@ -154,13 +151,13 @@ const LLMSettingsContent: React.FC = () => {
             aria-label="CometAPI key"
             style={inputStyle}
           />
-          <button type="button" onClick={() => setShowKey((v) => !v)} style={iconBtnStyle} aria-label={showKey ? 'Hide key' : 'Show key'}>
+          <button type="button" onClick={() => setShowKey((v) => !v)} style={iconBtnStyle} aria-label={showKey ? t('settings.hideKey') : t('settings.showKey')}>
             {showKey ? '🙈' : '👁'}
           </button>
         </div>
 
         {/* Base URL */}
-        <label style={labelStyle}>Base URL</label>
+        <label style={labelStyle}>{t('settings.baseUrl')}</label>
         <input
           type="url"
           value={baseUrlDraft}
@@ -170,13 +167,13 @@ const LLMSettingsContent: React.FC = () => {
         />
 
         {/* Model Map */}
-        <label style={labelStyle}>Model IDs per tier</label>
+        <label style={labelStyle}>{t('settings.modelTiers')}</label>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
           {MODEL_TIERS.map((tier) => (
             <div key={tier}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <span style={{ width: '185px', fontSize: '12px', color: 'var(--t2)', flexShrink: 0 }}>
-                  {TIER_LABELS[tier]}
+                  {t(`model.${tier}`)}
                 </span>
                 <input
                   type="text"
@@ -211,7 +208,7 @@ const LLMSettingsContent: React.FC = () => {
         {/* Debug Mode */}
         <label style={{ ...labelStyle, display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', marginBottom: '0' }}>
           <input type="checkbox" checked={debugDraft} onChange={(e) => setDebugDraft(e.target.checked)} style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
-          <span>Debug Mode — show LLM call logs panel</span>
+          <span>{t('settings.debugMode')}</span>
         </label>
 
         {/* Test error */}
@@ -232,10 +229,10 @@ const LLMSettingsContent: React.FC = () => {
           ═══════════════════════════════════════════════════════════════════════ */}
       <div style={sectionBoxStyle}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-          <div style={sectionTitleStyle}>🔍 Web Search Tool — for research agents</div>
+          <div style={sectionTitleStyle}>🔍 {t('settings.sectionWebSearch')}</div>
           <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '12px', color: wsEnabled ? '#34D399' : 'var(--t4)' }}>
             <input type="checkbox" checked={wsEnabled} onChange={(e) => setWsEnabled(e.target.checked)} style={{ width: '14px', height: '14px', cursor: 'pointer' }} />
-            {wsEnabled ? 'Enabled' : 'Disabled'}
+            {wsEnabled ? t('settings.enabled') : t('settings.disabled')}
           </label>
         </div>
 
@@ -243,7 +240,7 @@ const LLMSettingsContent: React.FC = () => {
 
           {/* Provider selector */}
           <div>
-            <label style={labelStyle}>Provider (Sonar model with web access)</label>
+            <label style={labelStyle}>{t('settings.providerLabel')}</label>
             <div style={{ display: 'flex', gap: '8px' }}>
               {(['perplexity', 'openrouter'] as WebSearchProvider[]).map((p) => (
                 <button
@@ -273,7 +270,7 @@ const LLMSettingsContent: React.FC = () => {
           {/* API Key (only for Perplexity direct or separate OR key) */}
           <div>
             <label style={labelStyle}>
-              {wsProvider === 'perplexity' ? 'Perplexity API Key' : 'OpenRouter API Key (can reuse LLM key)'}
+              {wsProvider === 'perplexity' ? t('settings.perplexityKey') : t('settings.openrouterKey')}
             </label>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               <input
@@ -284,7 +281,7 @@ const LLMSettingsContent: React.FC = () => {
                 aria-label="Web search API key"
                 style={inputStyle}
               />
-              <button type="button" onClick={() => setShowWsKey((v) => !v)} style={iconBtnStyle} aria-label={showWsKey ? 'Hide key' : 'Show key'}>
+              <button type="button" onClick={() => setShowWsKey((v) => !v)} style={iconBtnStyle} aria-label={showWsKey ? t('settings.hideKey') : t('settings.showKey')}>
                 {showWsKey ? '🙈' : '👁'}
               </button>
             </div>
@@ -292,7 +289,7 @@ const LLMSettingsContent: React.FC = () => {
 
           {/* Sonar model selector */}
           <div>
-            <label style={labelStyle}>Sonar Model</label>
+            <label style={labelStyle}>{t('settings.sonarModel')}</label>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {SONAR_MODELS.map(({ id, label }) => (
                 <label
@@ -338,21 +335,24 @@ const LLMSettingsContent: React.FC = () => {
       {/* ── Global actions ──────────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
         <button type="button" onClick={closeModal} style={{ ...btnStyle, background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--t2)', cursor: 'pointer' }}>
-          Cancel
+          {t('actions.cancel')}
         </button>
         <button type="button" onClick={handleSave} style={{ ...btnStyle, background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer' }}>
-          Save
+          {t('actions.save')}
         </button>
       </div>
     </div>
   )
 }
 
-export const LLMSettingsModal: React.FC = () => (
-  <ModalBase modalId={MODAL_ID} title="⚙ LLM Settings" width={600}>
-    <LLMSettingsContent />
-  </ModalBase>
-)
+export const LLMSettingsModal: React.FC = () => {
+  const { t } = useTranslation()
+  return (
+    <ModalBase modalId={MODAL_ID} title={`⚙ ${t('settings.title')}`} width={600}>
+      <LLMSettingsContent />
+    </ModalBase>
+  )
+}
 
 // ─── Shared styles ────────────────────────────────────────────────────────────
 

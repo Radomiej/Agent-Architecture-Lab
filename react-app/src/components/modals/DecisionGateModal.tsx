@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react'
-import { useSimulationStore, HITL_GATE_OPTIONS } from '../../store/simulationStore'
+import { useTranslation } from 'react-i18next'
+import { useSimulationStore, HITL_GATE_OPTION_IDS } from '../../store/simulationStore'
 import { AGENT_SVG } from '../../data/agentSvg'
 
 const OPTION_COLORS: Record<string, string> = {
@@ -16,6 +17,7 @@ const OPTION_HOVER_BG: Record<string, string> = {
 }
 
 export const DecisionGateModal: React.FC = () => {
+  const { t } = useTranslation()
   const { hitlGateOpen, closeHitlGate } = useSimulationStore()
   const dialogRef = useRef<HTMLDivElement>(null)
 
@@ -55,7 +57,7 @@ export const DecisionGateModal: React.FC = () => {
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
-        aria-label="HITL Decision Gate"
+        aria-label={t('hitl.title')}
         tabIndex={-1}
         style={{
           width: '100%',
@@ -96,10 +98,10 @@ export const DecisionGateModal: React.FC = () => {
             />
             <div>
               <h2 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: 'var(--t1)' }}>
-                HITL Decision Gate
+                {t('hitl.title')}
               </h2>
               <p style={{ margin: 0, fontSize: '12px', color: 'var(--t3)' }}>
-                Decision Presenter — wybierz jak kontynuować
+                {t('hitl.subtitle')}
               </p>
             </div>
           </div>
@@ -123,15 +125,14 @@ export const DecisionGateModal: React.FC = () => {
         {/* Body */}
         <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <p style={{ margin: 0, fontSize: '13px', color: 'var(--t2)', lineHeight: 1.5 }}>
-            Symulacja osiągnęła punkt decyzyjny. Wybierz jedną z opcji poniżej,
-            aby określić jak zespół agentów powinien kontynuować.
+            {t('hitl.description')}
           </p>
 
-          {HITL_GATE_OPTIONS.map((opt) => (
+          {HITL_GATE_OPTION_IDS.map((id) => (
             <button
-              key={opt.id}
-              onClick={() => closeHitlGate(opt.id)}
-              aria-label={`Option ${opt.id}: ${opt.label}`}
+              key={id}
+              onClick={() => closeHitlGate(id)}
+              aria-label={`Option ${id}: ${t(`hitl.options.${id}.label`)}`}
               style={{
                 display: 'flex',
                 alignItems: 'flex-start',
@@ -146,8 +147,8 @@ export const DecisionGateModal: React.FC = () => {
               }}
               onMouseEnter={(e) => {
                 const el = e.currentTarget
-                el.style.borderColor = OPTION_COLORS[opt.id]
-                el.style.background = OPTION_HOVER_BG[opt.id]
+                el.style.borderColor = OPTION_COLORS[id]
+                el.style.background = OPTION_HOVER_BG[id]
               }}
               onMouseLeave={(e) => {
                 const el = e.currentTarget
@@ -163,7 +164,7 @@ export const DecisionGateModal: React.FC = () => {
                   width: '28px',
                   height: '28px',
                   borderRadius: '50%',
-                  background: OPTION_COLORS[opt.id],
+                  background: OPTION_COLORS[id],
                   color: '#06060A',
                   fontWeight: 800,
                   fontSize: '13px',
@@ -173,15 +174,15 @@ export const DecisionGateModal: React.FC = () => {
                   marginTop: '1px',
                 }}
               >
-                {opt.id}
+                {id}
               </span>
 
               <div>
                 <div style={{ fontWeight: 700, fontSize: '14px', color: 'var(--t1)', marginBottom: '3px' }}>
-                  {opt.label}
+                  {t(`hitl.options.${id}.label`)}
                 </div>
                 <div style={{ fontSize: '12px', color: 'var(--t3)', lineHeight: 1.4 }}>
-                  {opt.desc}
+                  {t(`hitl.options.${id}.desc`)}
                 </div>
               </div>
             </button>
@@ -198,9 +199,10 @@ export const DecisionGateModal: React.FC = () => {
             textAlign: 'center',
           }}
         >
-          Press <kbd style={{ fontFamily: 'monospace', padding: '1px 5px', background: 'var(--bg-input)', borderRadius: '3px', border: '1px solid var(--border)' }}>Esc</kbd> to dismiss
+          {t('hitl.escHint')}
         </div>
       </div>
     </div>
   )
 }
+

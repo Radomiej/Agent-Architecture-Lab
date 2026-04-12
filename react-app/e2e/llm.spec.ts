@@ -4,6 +4,8 @@ import { test, expect } from '@playwright/test'
 
 test.describe('LLM Settings Modal', () => {
   test.beforeEach(async ({ page }) => {
+    // Set English locale so t() strings match the English patterns below
+    await page.addInitScript(() => { localStorage.setItem('acV32_lang', 'en') })
     await page.goto('/')
     await expect(page.getByRole('banner')).toBeVisible()
     await expect(page.locator('text=Loading...')).toHaveCount(0)
