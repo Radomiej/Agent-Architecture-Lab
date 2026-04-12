@@ -167,3 +167,27 @@ export interface CtxResult {
   window: number
   pct: number
 }
+
+export interface LLMConfig {
+  apiKey: string
+  baseUrl: string
+  modelMap: Record<ModelType, string>
+  debugMode: boolean
+}
+
+export type LLMCallStatus = 'pending' | 'streaming' | 'done' | 'error'
+
+export interface LLMCallLog {
+  id: string
+  agentId: string
+  agentName: string
+  model: string
+  status: LLMCallStatus
+  systemPrompt: string
+  userMessage: string
+  responseText: string
+  usage?: { promptTokens: number; completionTokens: number; totalTokens: number }
+  latencyMs?: number
+  error?: string
+  startedAt: number
+}
