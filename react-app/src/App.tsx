@@ -29,7 +29,8 @@ function AppLayout() {
       if (e.key === 'k' || e.key === 'K') { openModal('cost'); return }
       if (e.key === 'm' || e.key === 'M') { openModal('mermaid'); return }
 
-      if ((e.key === 'Delete' || e.key === 'Backspace') && selected.length > 0) {
+      // Delete only (not Backspace - avoid conflicting with browser back navigation)
+      if (e.key === 'Delete' && selected.length > 0) {
         e.preventDefault()
         selected.forEach(id => removeNode(id))
       }
