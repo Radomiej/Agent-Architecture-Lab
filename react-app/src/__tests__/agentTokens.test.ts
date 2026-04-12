@@ -21,6 +21,12 @@ function makeNode(id: string, agentId: string): CanvasNode {
   return { id, agentId, x: 0, y: 0, connections: [] }
 }
 
+// Fallback tokens used by calcAgentCost / calcAgentCtx for unknown agentIds.
+// Named here so that if the implementation changes, the tests clearly reflect
+// what the expected fallback value is.
+const FALLBACK_INPUT_TOKENS  = 30_000
+const FALLBACK_OUTPUT_TOKENS = 5_000
+
 // ─── calcAgentCost ─────────────────────────────────────────────────────────────
 
 describe('calcAgentCost', () => {
@@ -39,7 +45,9 @@ describe('calcAgentCost', () => {
 
   it('uses fallback tokens { i:30000, o:5000 } for unknown agentId', () => {
     const costs = MODEL_COSTS['haiku']
-    const expectedP50 = (30000 / 1_000_000) * costs.i + (5000 / 1_000_000) * costs.o
+    const expectedP50 =
+      (FALLBACK_INPUT_TOKENS / 1_000_000) * costs.i +
+      (FALLBACK_OUTPUT_TOKENS / 1_000_000) * costs.o
     const { p50 } = calcAgentCost('unknown_agent_xyz', 'haiku')
     expect(p50).toBeCloseTo(expectedP50, 6)
   })
@@ -131,7 +139,7 @@ describe('calcAgentCtx', () => {
 
   it('uses fallback tokens for unknown agentId', () => {
     const { used } = calcAgentCtx('nonexistent', 'sonnet')
-    expect(used).toBe(CTX_BASELINE_TOTAL + 30000)
+    expect(used).toBe(CTX_BASELINE_TOTAL + FALLBACK_INPUT_TOKENS)
   })
 })
 

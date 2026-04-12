@@ -46,6 +46,14 @@ function makeConfigData(version = '32.16'): SavedConfig['data'] {
 
 // Helper that always returns a freshly-created store instance so each test
 // starts from a clean slate (no shared module-level state leakage).
+//
+// WHY vi.resetModules() instead of a simple beforeEach reset?
+// presetStore.ts reads from localStorage at module *initialisation* time
+// (the `const stored = loadFromStorage()` call at the top level).
+// If we only clear localStorage in beforeEach without resetting modules, the
+// already-imported module still holds the stale `stored` snapshot from the
+// first import. Re-importing forces the module's top-level code to run again
+// against the freshly-cleared localStorage, giving us a truly empty store.
 async function freshStore() {
   vi.resetModules()
   const { usePresetStore } = await import('../store/presetStore')
