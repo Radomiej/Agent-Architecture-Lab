@@ -37,6 +37,8 @@ export const DecisionGateModal: React.FC = () => {
         alignItems: 'center',
         justifyContent: 'center',
         padding: '24px',
+        // Start below TopBar (z-index 2010) so Stop button remains accessible
+        paddingTop: '72px',
       }}
       role="presentation"
       onClick={(e) => { if (e.target === e.currentTarget) closeHitlGate() }}

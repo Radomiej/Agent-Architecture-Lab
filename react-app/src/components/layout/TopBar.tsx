@@ -37,7 +37,7 @@ export const TopBar: React.FC = () => {
         borderBottom: '1px solid var(--border, rgba(255,255,255,0.08))',
         backdropFilter: 'blur(20px)',
         position: 'relative',
-        zIndex: 100,
+        zIndex: 2010,
         flexShrink: 0,
       }}
     >

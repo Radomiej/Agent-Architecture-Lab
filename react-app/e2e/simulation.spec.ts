@@ -38,7 +38,8 @@ test.describe('Decision Gate — preset with decision_presenter', () => {
     const sidebar = page.getByRole('complementary', { name: 'Left sidebar' })
     await sidebar.getByRole('tab', { name: 'Presety' }).click()
     const search = sidebar.getByRole('searchbox')
-    await search.fill('Deep Five Minds')
+    // Search uses preset IDs (underscores), not display labels
+    await search.fill('deep_five_minds')
     await sidebar.getByRole('button', { name: /Deep Five Minds/i }).click()
     await search.clear()
 
@@ -159,8 +160,9 @@ test.describe('Decision Gate — preset with decision_presenter', () => {
   test('stopping simulation closes an open HITL gate', async ({ page }) => {
     await loadMigrationCrewPreset(page)
     await startSimAndWaitForGate(page)
-    // Stop simulation while gate is open
+    // TopBar z-index (2010) is above the gate overlay (2000) — Stop is always clickable
     await page.getByRole('button', { name: /Stop/i }).click()
     await expect(page.getByRole('dialog', { name: /HITL Decision Gate/i })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: /Symulacja/i })).toBeVisible()
   })
 })
