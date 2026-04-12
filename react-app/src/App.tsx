@@ -95,7 +95,7 @@ function AppLayout() {
       setActiveAgents([])
       completePhase(agent.phase)
       nextStep()
-    }, 900)
+    }, 1500)
 
     return () => window.clearTimeout(timer)
   }, [isRunning, isPaused, simulationOrder, step, setActiveAgents, addMessage, completePhase, nextStep, stop])
