@@ -32,19 +32,14 @@ export const PhaseChip: React.FC<PhaseChipProps> = ({ phase, small = false }) =>
 
   return (
     <span
+      className="inline-flex items-center rounded-full font-semibold uppercase tracking-widest leading-snug"
       style={{
-        display: 'inline-flex',
-        alignItems: 'center',
         padding: small ? '1px 6px' : '2px 8px',
-        borderRadius: '999px',
         fontSize: small ? '10px' : '11px',
-        fontWeight: 600,
         letterSpacing: '0.04em',
-        textTransform: 'uppercase',
         color,
         background: `rgba(${hexToRgb(color)}, 0.14)`,
         border: `1px solid rgba(${hexToRgb(color)}, 0.3)`,
-        lineHeight: 1.4,
       }}
     >
       {label}
@@ -58,3 +53,4 @@ function hexToRgb(hex: string): string {
   const b = parseInt(hex.slice(5, 7), 16)
   return `${r},${g},${b}`
 }
+

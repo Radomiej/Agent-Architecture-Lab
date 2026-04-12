@@ -17,31 +17,21 @@ export const ModelBadge: React.FC<ModelBadgeProps> = ({ model, small = false }) 
 
   return (
     <span
+      className="inline-flex items-center gap-1 rounded-full font-semibold whitespace-nowrap leading-snug"
       style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '4px',
         padding: small ? '1px 6px' : '2px 8px',
-        borderRadius: '999px',
         fontSize: small ? '10px' : '11px',
-        fontWeight: 600,
         color: cfg.color,
         background: `rgba(${cfg.rgb}, 0.12)`,
         border: `1px solid rgba(${cfg.rgb}, 0.25)`,
-        lineHeight: 1.4,
-        whiteSpace: 'nowrap',
       }}
     >
       <span
-        style={{
-          width: 6,
-          height: 6,
-          borderRadius: '50%',
-          background: cfg.color,
-          display: 'inline-block',
-        }}
+        className="rounded-full inline-block"
+        style={{ width: 6, height: 6, background: cfg.color }}
       />
       {cfg.label}
     </span>
   )
 }
+
