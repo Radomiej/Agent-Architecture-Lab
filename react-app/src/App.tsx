@@ -1,4 +1,4 @@
-import { Suspense } from 'react'
+import { Suspense, useEffect } from 'react'
 import './styles/tokens.css'
 import './styles/animations.css'
 import { useTheme } from './hooks/useTheme'
@@ -6,9 +6,37 @@ import { TopBar } from './components/layout/TopBar'
 import { LeftSidebar } from './components/layout/LeftSidebar'
 import { RightSidebar } from './components/layout/RightSidebar'
 import { CanvasArea } from './components/canvas/CanvasArea'
+import { CostModal } from './components/modals/CostModal'
+import { MermaidModal } from './components/modals/MermaidModal'
+import { useUiStore } from './store/uiStore'
+import { useCanvasStore } from './store/canvasStore'
 
 function AppLayout() {
   useTheme()
+  const { openModal, activeModal, closeModal } = useUiStore()
+  const { selected, removeNode } = useCanvasStore()
+
+  // Global keyboard shortcuts
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (document.activeElement as HTMLElement)?.tagName
+      const isInput = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT'
+        || (document.activeElement as HTMLElement)?.isContentEditable
+
+      if (e.key === 'Escape' && activeModal) { closeModal(); return }
+      if (isInput || activeModal) return
+
+      if (e.key === 'k' || e.key === 'K') { openModal('cost'); return }
+      if (e.key === 'm' || e.key === 'M') { openModal('mermaid'); return }
+
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selected.length > 0) {
+        e.preventDefault()
+        selected.forEach(id => removeNode(id))
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [openModal, closeModal, activeModal, selected, removeNode])
 
   return (
     <div
@@ -46,6 +74,10 @@ function AppLayout() {
         <CanvasArea />
         <RightSidebar />
       </div>
+
+      {/* Modals */}
+      <CostModal />
+      <MermaidModal />
     </div>
   )
 }
