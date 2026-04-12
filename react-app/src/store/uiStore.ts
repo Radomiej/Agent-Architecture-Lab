@@ -105,8 +105,25 @@ export const useUiStore = create<UiStore>((set) => ({
   setSidebarTab: (sidebarTab) => set({ sidebarTab }),
   setSearch: (agentPaletteSearch) => set({ agentPaletteSearch }),
 
-  selectAgent: (id) => set({ selectedAgentId: id, selectedPresetId: null }),
-  selectPreset: (id) => set({ selectedPresetId: id, selectedAgentId: null }),
+  selectAgent: (id) => set((s) => {
+    // On mobile (left drawer open), auto-navigate to right panel
+    const mobile = id !== null && s.leftDrawerOpen
+    return {
+      selectedAgentId: id,
+      selectedPresetId: null,
+      leftDrawerOpen: mobile ? false : s.leftDrawerOpen,
+      rightDrawerOpen: mobile ? true : s.rightDrawerOpen,
+    }
+  }),
+  selectPreset: (id) => set((s) => {
+    const mobile = id !== null && s.leftDrawerOpen
+    return {
+      selectedPresetId: id,
+      selectedAgentId: null,
+      leftDrawerOpen: mobile ? false : s.leftDrawerOpen,
+      rightDrawerOpen: mobile ? true : s.rightDrawerOpen,
+    }
+  }),
 
   setLeftDrawer: (open) => set({ leftDrawerOpen: open }),
   setRightDrawer: (open) => set({ rightDrawerOpen: open }),
