@@ -2,9 +2,29 @@ import { create } from 'zustand'
 import type { ModelType, LLMConfig, LLMProvider, WebSearchConfig } from '../types'
 import { DEFAULT_MODEL_MAP, OPENROUTER_DEFAULT_MODEL_MAP, COMETAPI_BASE_URL, OPENROUTER_BASE_URL } from '../services/llmService'
 import { DEFAULT_WEB_SEARCH_CONFIG } from '../types'
+import { getDefaultLLMProvider, getEnvApiKey, getEnvWebSearchApiKey, getEnvWebSearchConfig } from '../utils/env'
 
 const LS_KEY = 'acLLM'
 const LS_WS_KEY = 'acWebSearch'
+
+function normalizeStoredText(value: string | undefined): string | undefined {
+  const trimmed = value?.trim()
+  return trimmed ? trimmed : undefined
+}
+
+function normalizeProvider(value: string | undefined): LLMProvider {
+  return value === 'openrouter' ? 'openrouter' : 'cometapi'
+}
+
+function normalizeWebSearchProvider(value: string | undefined): WebSearchConfig['provider'] {
+  return value === 'perplexity' ? 'perplexity' : 'openrouter'
+}
+
+function normalizeSonarModel(value: string | undefined): WebSearchConfig['model'] {
+  return value === 'sonar' || value === 'sonar-pro' || value === 'sonar-reasoning' || value === 'sonar-deep-research'
+    ? value
+    : DEFAULT_WEB_SEARCH_CONFIG.model
+}
 
 // ─── LLM Provider ─────────────────────────────────────────────────────────────
 
@@ -23,21 +43,23 @@ function loadConfig(): LLMConfig {
     const raw = localStorage.getItem(LS_KEY)
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<LLMConfig>
-      const provider: LLMProvider = parsed.provider ?? 'cometapi'
+      const provider = normalizeProvider(parsed.provider)
       return {
         provider,
-        apiKey: parsed.apiKey ?? '',
+        apiKey: normalizeStoredText(parsed.apiKey) ?? getEnvApiKey(provider),
         baseUrl: parsed.baseUrl ?? defaultBaseUrl(provider),
         modelMap: { ...defaultModelMap(provider), ...(parsed.modelMap ?? {}) },
         debugMode: parsed.debugMode ?? false,
       }
     }
   } catch { /* ignore */ }
+
+  const provider = getDefaultLLMProvider()
   return {
-    provider: 'cometapi',
-    apiKey: '',
-    baseUrl: COMETAPI_BASE_URL,
-    modelMap: { ...DEFAULT_MODEL_MAP },
+    provider,
+    apiKey: getEnvApiKey(provider),
+    baseUrl: defaultBaseUrl(provider),
+    modelMap: { ...defaultModelMap(provider) },
     debugMode: false,
   }
 }
@@ -45,22 +67,45 @@ function loadConfig(): LLMConfig {
 // ─── Web Search Tool ───────────────────────────────────────────────────────────
 
 function loadWebSearch(): WebSearchConfig {
+  const envDefaults = getEnvWebSearchConfig()
+
   try {
     const raw = localStorage.getItem(LS_WS_KEY)
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<WebSearchConfig>
-      return { ...DEFAULT_WEB_SEARCH_CONFIG, ...parsed }
+      const provider = normalizeWebSearchProvider(parsed.provider)
+      return {
+        ...envDefaults,
+        ...parsed,
+        enabled: parsed.enabled ?? envDefaults.enabled,
+        provider,
+        apiKey: normalizeStoredText(parsed.apiKey) ?? getEnvWebSearchApiKey(provider),
+        model: normalizeSonarModel(parsed.model),
+      }
     }
   } catch { /* ignore */ }
-  return { ...DEFAULT_WEB_SEARCH_CONFIG }
+
+  return envDefaults
 }
 
 function saveConfig(cfg: LLMConfig) {
-  try { localStorage.setItem(LS_KEY, JSON.stringify(cfg)) } catch { /* ignore */ }
+  const envApiKey = normalizeStoredText(getEnvApiKey(cfg.provider))
+  const persisted = {
+    ...cfg,
+    apiKey: normalizeStoredText(cfg.apiKey) === envApiKey ? '' : cfg.apiKey,
+  }
+
+  try { localStorage.setItem(LS_KEY, JSON.stringify(persisted)) } catch { /* ignore */ }
 }
 
 function saveWebSearch(ws: WebSearchConfig) {
-  try { localStorage.setItem(LS_WS_KEY, JSON.stringify(ws)) } catch { /* ignore */ }
+  const envApiKey = normalizeStoredText(getEnvWebSearchApiKey(ws.provider))
+  const persisted = {
+    ...ws,
+    apiKey: normalizeStoredText(ws.apiKey) === envApiKey ? '' : ws.apiKey,
+  }
+
+  try { localStorage.setItem(LS_WS_KEY, JSON.stringify(persisted)) } catch { /* ignore */ }
 }
 
 // ─── Store ─────────────────────────────────────────────────────────────────────
@@ -87,21 +132,27 @@ export const useLLMStore = create<LLMStore>((set, get) => ({
   webSearch: initialWS,
 
   setProvider: (provider) => {
-    // When switching provider, auto-update baseUrl and reset modelMap to provider defaults
+    const current = get()
+    const currentEnvKey = normalizeStoredText(getEnvApiKey(current.provider))
+    const nextEnvKey = getEnvApiKey(provider)
+    const nextApiKey = normalizeStoredText(current.apiKey) === currentEnvKey ? nextEnvKey : current.apiKey
+
     const next: LLMConfig = {
-      ...get(),
+      ...current,
       provider,
+      apiKey: nextApiKey,
       baseUrl: defaultBaseUrl(provider),
       modelMap: defaultModelMap(provider),
     }
     saveConfig(next)
-    set({ provider: next.provider, baseUrl: next.baseUrl, modelMap: next.modelMap })
+    set({ provider: next.provider, apiKey: next.apiKey, baseUrl: next.baseUrl, modelMap: next.modelMap })
   },
 
   setApiKey: (apiKey) => {
-    const next = { ...get(), apiKey }
+    const provider = get().provider
+    const next = { ...get(), apiKey: normalizeStoredText(apiKey) ?? getEnvApiKey(provider) }
     saveConfig(next)
-    set({ apiKey })
+    set({ apiKey: next.apiKey })
   },
 
   setBaseUrl: (baseUrl) => {
@@ -124,13 +175,26 @@ export const useLLMStore = create<LLMStore>((set, get) => ({
   },
 
   setConfig: (cfg) => {
-    const next = { ...get(), ...cfg }
+    const merged = { ...get(), ...cfg }
+    const next = {
+      ...merged,
+      provider: normalizeProvider(merged.provider),
+      apiKey: normalizeStoredText(merged.apiKey) ?? getEnvApiKey(normalizeProvider(merged.provider)),
+    }
     saveConfig(next)
-    set(cfg)
+    set(next)
   },
 
   setWebSearch: (ws) => {
-    const next = { ...get().webSearch, ...ws }
+    const current = get().webSearch
+    const provider = normalizeWebSearchProvider(ws.provider ?? current.provider)
+    const next = {
+      ...current,
+      ...ws,
+      provider,
+      apiKey: normalizeStoredText(ws.apiKey ?? current.apiKey) ?? getEnvWebSearchApiKey(provider),
+      model: normalizeSonarModel(ws.model ?? current.model),
+    }
     saveWebSearch(next)
     set({ webSearch: next })
   },

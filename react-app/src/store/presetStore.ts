@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import type { Agent, SavedConfig } from '../types'
 
 const MIGRATION_KEYS = [
+  'acV33_custom',
   'acV32_16_custom',
   'acV32_15_custom',
   'acV32_14_custom',

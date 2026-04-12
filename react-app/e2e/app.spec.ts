@@ -19,7 +19,7 @@ test.describe('Agent Architecture Designer — core UI', () => {
 
   test('shows app title and version badge', async ({ page }) => {
     await expect(page.locator('text=Agent Architecture')).toBeVisible()
-    await expect(page.locator('text=v32.16')).toBeVisible()
+    await expect(page.locator('text=v33')).toBeVisible()
   })
 
   // ─── TopBar controls ──────────────────────────────────────────────────────

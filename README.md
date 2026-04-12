@@ -10,7 +10,7 @@
   <a href="https://radomiej.github.io/Agent-Architecture-Lab/"><img src="https://img.shields.io/badge/🌐_live_demo-GitHub_Pages-7C3AED.svg" alt="Live Demo"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
   <a href="https://github.com/Radomiej/Agent-Architecture-Lab/actions/workflows/tests.yml"><img src="https://github.com/Radomiej/Agent-Architecture-Lab/actions/workflows/tests.yml/badge.svg" alt="E2E Tests"></a>
-  <img src="https://img.shields.io/badge/version-v32.16-F59E0B.svg" alt="v32.16">
+  <img src="https://img.shields.io/badge/version-v33-F59E0B.svg" alt="v33">
   <img src="https://img.shields.io/badge/agents-35-818CF8.svg" alt="35 Agents">
   <img src="https://img.shields.io/badge/presets-42-34D399.svg" alt="42 Presets">
   <img src="https://img.shields.io/badge/languages-PL_EN-06B6D4.svg" alt="PL/EN">
@@ -57,9 +57,12 @@ Po korzystaniu z niego powinieneś umieć:
 git clone https://github.com/Radomiej/Agent-Architecture-Lab.git
 cd Agent-Architecture-Lab/react-app
 npm install
+cp .env.example .env
 npm run dev
 # → http://localhost:5173
 ```
+
+W pliku `react-app/.env` możesz ustawić klucze dla CometAPI i OpenRouter. Domyślnie web search używa OpenRouter + Sonar i automatycznie skorzysta z `VITE_OPENROUTER_API_KEY`, jeśli nie podasz osobnego `VITE_WEB_SEARCH_API_KEY`.
 
 Produkcja:
 
@@ -76,14 +79,36 @@ npm run test:e2e
 
 ---
 
-## Integracja z prawdziwym LLM — CometAPI
+## Integracja z prawdziwym LLM — CometAPI / OpenRouter
 
-Aplikacja obsługuje wywoływanie prawdziwych modeli LLM poprzez **[CometAPI](https://cometapi.com)** — agregator 500+ modeli (GPT-5, Claude, Gemini i inne) z OpenAI-kompatybilnym API. Żadnego backendu nie potrzebujesz — wywołania idą bezpośrednio z przeglądarki.
+Aplikacja obsługuje wywoływanie prawdziwych modeli LLM poprzez **[CometAPI](https://cometapi.com)** i **[OpenRouter](https://openrouter.ai)**. Żadnego backendu nie potrzebujesz — wywołania idą bezpośrednio z przeglądarki.
+
+### Konfiguracja przez `.env`
+
+W katalogu `react-app/` są dwa pliki:
+
+- `.env.example` — wzór do commitowania
+- `.env` — lokalny plik na sekrety, ignorowany przez git
+
+Dostępne zmienne:
+
+```bash
+VITE_LLM_PROVIDER=cometapi
+VITE_COMETAPI_API_KEY=
+VITE_OPENROUTER_API_KEY=
+VITE_WEB_SEARCH_ENABLED=true
+VITE_WEB_SEARCH_PROVIDER=openrouter
+VITE_WEB_SEARCH_MODEL=sonar-pro
+VITE_WEB_SEARCH_API_KEY=
+VITE_PERPLEXITY_API_KEY=
+```
+
+Jeśli ustawisz `VITE_WEB_SEARCH_PROVIDER=openrouter`, aplikacja użyje `VITE_OPENROUTER_API_KEY` także dla web search, o ile `VITE_WEB_SEARCH_API_KEY` będzie puste.
 
 ### Konfiguracja
 
 1. Kliknij **⚙** w górnym pasku (lub naciśnij `,`)
-2. Wklej swój klucz CometAPI (format: `sk-…`) — pobierz go z [cometapi.com](https://cometapi.com)
+2. Wybierz dostawcę i wklej klucz CometAPI (`sk-…`) albo OpenRouter (`sk-or-…`), albo ustaw je wcześniej w `.env`
 3. Opcjonalnie zmień Base URL lub ID modeli per tier (Opus / Sonnet / Haiku)
 4. Włącz **Debug Mode**
 5. Kliknij **Test Connection** żeby zweryfikować klucz
@@ -112,7 +137,7 @@ Każdy wpis logu pokazuje:
 | Odpowiedź | Pierwsze 200 znaków, rozwijalne do pełnej treści |
 | Kopiowanie | Surowy JSON wywołania (przycisk 📋) |
 
-Klucz API nigdy nie opuszcza przeglądarki — przechowywany wyłącznie w `localStorage`.
+Klucz API nigdy nie opuszcza przeglądarki. Może być trzymany lokalnie w `.env` albo w `localStorage` po zapisaniu ustawień w UI.
 
 ---
 

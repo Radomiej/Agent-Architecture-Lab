@@ -178,4 +178,42 @@ test.describe('Canvas interactions', () => {
     await page.getByRole('button', { name: /Stop/i }).click()
     await expect(page.getByRole('button', { name: /Symulacja/i })).toBeVisible()
   })
+
+  test('toast notifications are stacked without overlap during simulation', async ({ page }) => {
+    const sidebar = page.getByRole('complementary', { name: 'Left sidebar' })
+    await sidebar.getByRole('tab', { name: 'Presety' }).click()
+    await sidebar.getByRole('button', { name: 'Solo' }).click()
+
+    await page.getByRole('button', { name: /Symulacja/i }).click()
+    await page.waitForTimeout(1700)
+
+    const alerts = page.getByRole('alert')
+    const count = await alerts.count()
+    expect(count).toBeGreaterThan(1)
+
+    const boxes: Array<{ x: number; y: number; width: number; height: number }> = []
+    for (let i = 0; i < count; i += 1) {
+      const box = await alerts.nth(i).boundingBox()
+      if (box) {
+        boxes.push(box)
+      }
+    }
+
+    for (let i = 0; i < boxes.length; i += 1) {
+      for (let j = i + 1; j < boxes.length; j += 1) {
+        const a = boxes[i]
+        const b = boxes[j]
+        const overlaps = !(
+          a.x + a.width <= b.x ||
+          b.x + b.width <= a.x ||
+          a.y + a.height <= b.y ||
+          b.y + b.height <= a.y
+        )
+        expect(overlaps).toBeFalsy()
+      }
+    }
+
+    await page.getByRole('button', { name: /Stop/i }).click()
+    await expect(page.getByRole('button', { name: /Symulacja/i })).toBeVisible()
+  })
 })

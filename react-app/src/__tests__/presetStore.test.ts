@@ -36,7 +36,7 @@ function makeAgent(id: string): Agent {
   }
 }
 
-function makeConfigData(version = '32.16'): SavedConfig['data'] {
+function makeConfigData(version = '33'): SavedConfig['data'] {
   return {
     nodes: [{ id: 'n1', agentId: 'orchestrator', x: 0, y: 0, connections: [] }],
     connections: [],
@@ -91,7 +91,7 @@ describe('presetStore – addCustomAgent', () => {
   it('persists to localStorage', async () => {
     const store = await freshStore()
     store.getState().addCustomAgent(makeAgent('persisted'))
-    const raw = localStorageMock.getItem('acV32_16_custom')
+    const raw = localStorageMock.getItem('acV33_custom')
     expect(raw).not.toBeNull()
     const parsed = JSON.parse(raw!)
     expect(parsed.customAgents[0].id).toBe('persisted')
@@ -124,7 +124,7 @@ describe('presetStore – removeCustomAgent', () => {
     const store = await freshStore()
     store.getState().addCustomAgent(makeAgent('a1'))
     store.getState().removeCustomAgent('a1')
-    const raw = localStorageMock.getItem('acV32_16_custom')!
+    const raw = localStorageMock.getItem('acV33_custom')!
     const parsed = JSON.parse(raw)
     expect(parsed.customAgents).toHaveLength(0)
   })
@@ -173,7 +173,7 @@ describe('presetStore – saved configs', () => {
     const loaded = store.getState().loadConfig('my-config')
     expect(loaded).toBeDefined()
     expect(loaded!.name).toBe('my-config')
-    expect(loaded!.data.version).toBe('32.16')
+    expect(loaded!.data.version).toBe('33')
   })
 
   it('loadConfig returns undefined for unknown name', async () => {
@@ -202,7 +202,7 @@ describe('presetStore – saved configs', () => {
   it('persists saved configs to localStorage', async () => {
     const store = await freshStore()
     store.getState().saveConfig('cfg', makeConfigData())
-    const raw = localStorageMock.getItem('acV32_16_custom')!
+    const raw = localStorageMock.getItem('acV33_custom')!
     const parsed = JSON.parse(raw)
     expect(parsed.savedConfigs).toHaveLength(1)
     expect(parsed.savedConfigs[0].name).toBe('cfg')
@@ -217,21 +217,21 @@ describe('presetStore – localStorage migration', () => {
   it('migrates data from an older key to the current key', async () => {
     // Seed an older key
     const oldData = JSON.stringify({ customAgents: [makeAgent('migrated')], savedConfigs: [] })
-    localStorageMock.setItem('acV32_15_custom', oldData)
+    localStorageMock.setItem('acV32_16_custom', oldData)
 
     const store = await freshStore()
     expect(store.getState().customAgents[0].id).toBe('migrated')
     // Data should now be under the current key
-    expect(localStorageMock.getItem('acV32_16_custom')).not.toBeNull()
+    expect(localStorageMock.getItem('acV33_custom')).not.toBeNull()
     // Old key should be removed
-    expect(localStorageMock.getItem('acV32_15_custom')).toBeNull()
+    expect(localStorageMock.getItem('acV32_16_custom')).toBeNull()
   })
 
   it('prefers the current key over older keys when both exist', async () => {
     const currentData = JSON.stringify({ customAgents: [makeAgent('current')], savedConfigs: [] })
     const oldData     = JSON.stringify({ customAgents: [makeAgent('old')],     savedConfigs: [] })
-    localStorageMock.setItem('acV32_16_custom', currentData)
-    localStorageMock.setItem('acV32_15_custom', oldData)
+    localStorageMock.setItem('acV33_custom', currentData)
+    localStorageMock.setItem('acV32_16_custom', oldData)
 
     const store = await freshStore()
     expect(store.getState().customAgents[0].id).toBe('current')
@@ -244,7 +244,7 @@ describe('presetStore – localStorage migration', () => {
   })
 
   it('handles corrupt JSON in localStorage gracefully', async () => {
-    localStorageMock.setItem('acV32_16_custom', '{INVALID_JSON}}}')
+    localStorageMock.setItem('acV33_custom', '{INVALID_JSON}}}')
     const store = await freshStore()
     // Should not throw; falls back to empty state
     expect(store.getState().customAgents).toHaveLength(0)

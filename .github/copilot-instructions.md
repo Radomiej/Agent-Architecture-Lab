@@ -87,7 +87,7 @@ react-app/
 - All state mutations happen inside store actions — never mutate from components directly.
 - Selectors should be narrow (pick only the slice they need) to minimise re-renders.
 - localStorage persistence lives in the store, not in components.
-  - Current localStorage key for custom agents: `acV32_16_custom`
+  - Current localStorage key for custom agents: `acV33_custom`
   - Maintain the migration chain when bumping the key.
 
 ### CSS / Styling

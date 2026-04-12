@@ -9,9 +9,9 @@
 
 ## CURRENT STATE (2026-04-11)
 
-**Shipped public version:** v32.16 "Universal Bilingual" (tagged as plugin version 0.32.16)
+**Shipped public version:** v33 "Universal Bilingual" (tagged as plugin version 0.33.0)
 **Live at:** https://thejacksoncode.github.io/Agent-Architecture/
-**File:** `v32.16/AGENT_TEAMS_CONFIGURATOR_v32_16.html` (~27500 lines, 5.7 MB) mirrored to `index.html`
+**File:** `react-app/index.html` + `react-app/src/*` (React MVP v33, built to `react-app/dist/` for publish)
 
 **Phase 0 ("Go Public") status:** SHIPPED. The original Phase 0 target was v0.1.0 from v31; we shipped through v31 -> v32 -> v32.1..v32.16 instead. The file grew past the original 5000-line hard cap because the educational mission (encyclopedia for all 35 agents + 42 presets in PL and EN + inline base64 infographics) required substantially more content than the original plan anticipated. The "5000 LOC hard cap" is formally retired - v32.14+ showed that container-query-based bento rendering + lazy sections keep perceived responsiveness acceptable even at ~27k lines.
 
@@ -31,11 +31,11 @@
 **Still not done from original roadmap:**
 - localStorage migration UX (user-facing JSON export/import exists; auto-migration across version keys exists via backward chain; a polished "upgrade banner" UI does not)
 - Full unit/integration test suite (still zero tests - intentional per MANIFEST R5 mitigation: manual QA checklist per version)
-- Claude Code plugin marketplace submission (plugin.json exists at 0.32.16 but formal submission to Anthropic marketplace is pending verification of current plugin.json schema)
+- Claude Code plugin marketplace submission (plugin.json exists at 0.33.0 but formal submission to Anthropic marketplace is pending verification of current plugin.json schema)
 - BroadcastChannel multi-tab sync in Live Monitor
 - File System Access API for importing EXECUTION_REPORT.json
 
-**Next phase focus (post v32.16):**
+**Next phase focus (post v33):**
 - Community feedback ingestion (GitHub Issues / Discussions). Primary open questions: do EN users want inline infographics parity with PL? Which agents benefit most from the encyclopedia format? Any missing agent archetypes?
 - Inline infographic parity for EN (infographics currently ship only in the PL encyclopedia)
 - Formal Claude Code plugin marketplace submission

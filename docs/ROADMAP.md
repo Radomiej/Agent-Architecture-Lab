@@ -1,6 +1,6 @@
 # Product Roadmap — Agent Architecture Designer
 
-**Current version:** React MVP (post-v32.16 HTML → React migration)
+**Current version:** React MVP v33
 **Live at:** <https://radomiej.github.io/Agent-Architecture-Lab/>
 **Updated:** 2026-04-12
 

@@ -27,7 +27,7 @@ export const Toast: React.FC<ToastProps> = ({ message, type = 'info', onDismiss,
   return (
     <div
       role="alert"
-      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-2.5 px-4 py-2.5 rounded-lg text-[13px] font-medium max-w-sm whitespace-nowrap"
+      className="flex items-center gap-2.5 px-4 py-2.5 rounded-lg text-[13px] font-medium max-w-sm w-full"
       style={{
         background: colors.bg,
         border: `1px solid ${colors.border}`,
@@ -62,10 +62,12 @@ interface ToastContainerProps {
 }
 
 export const ToastContainer: React.FC<ToastContainerProps> = ({ toasts, onDismiss }) => (
-  <>
+  <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] flex flex-col items-center gap-2 w-[min(92vw,26rem)] pointer-events-none">
     {toasts.map((t) => (
-      <Toast key={t.id} message={t.message} type={t.type} onDismiss={() => onDismiss(t.id)} />
+      <div key={t.id} className="pointer-events-auto w-full">
+        <Toast message={t.message} type={t.type} onDismiss={() => onDismiss(t.id)} />
+      </div>
     ))}
-  </>
+  </div>
 )
 

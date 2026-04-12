@@ -4,6 +4,7 @@ import { useLLMStore } from '../../store/llmStore'
 import { testConnection, testWebSearchConnection, COMETAPI_BASE_URL, OPENROUTER_BASE_URL } from '../../services/llmService'
 import type { ModelType, LLMProvider, WebSearchProvider, SonarModelId } from '../../types'
 import { SONAR_MODELS } from '../../types'
+import { getEnvApiKey, getEnvWebSearchApiKey } from '../../utils/env'
 import { ModalBase } from './ModalBase'
 
 const MODEL_TIERS: ModelType[] = ['opus', 'sonnet', 'haiku']
@@ -57,8 +58,14 @@ const LLMSettingsContent: React.FC = () => {
   // ── Handlers ────────────────────────────────────────────────────────────────
 
   const handleProviderChange = (p: LLMProvider) => {
+    const currentEnvKey = getEnvApiKey(provider)
+    const nextEnvKey = getEnvApiKey(p)
+
     setProviderDraft(p)
     setBaseUrlDraft(p === 'openrouter' ? OPENROUTER_BASE_URL : COMETAPI_BASE_URL)
+    if (!apiKeyDraft.trim() || apiKeyDraft === currentEnvKey) {
+      setApiKeyDraft(nextEnvKey)
+    }
     // Reset model map to provider defaults (user can still override)
     setModelMapDraft(
       p === 'openrouter'
@@ -142,6 +149,9 @@ const LLMSettingsContent: React.FC = () => {
             <a href="https://cometapi.com" target="_blank" rel="noreferrer" style={{ color: '#A78BFA' }}>Get key ↗</a>
           </p>
         )}
+        <p style={{ ...hintStyle, marginBottom: '12px' }}>
+          If <code>.env</code> contains provider keys, they are loaded here automatically. Saving an empty field falls back to the env value.
+        </p>
 
         {/* API Key */}
         <label style={labelStyle}>API Key</label>
@@ -249,7 +259,15 @@ const LLMSettingsContent: React.FC = () => {
                 <button
                   key={p}
                   type="button"
-                  onClick={() => { setWsProvider(p); setWsTestState('idle') }}
+                  onClick={() => {
+                    const currentEnvKey = getEnvWebSearchApiKey(wsProvider)
+                    const nextEnvKey = getEnvWebSearchApiKey(p)
+                    setWsProvider(p)
+                    if (!wsKey.trim() || wsKey === currentEnvKey) {
+                      setWsKey(nextEnvKey)
+                    }
+                    setWsTestState('idle')
+                  }}
                   style={{
                     ...providerBtnStyle,
                     background: wsProvider === p ? 'rgba(6,182,212,0.15)' : 'var(--bg-card)',
@@ -267,6 +285,9 @@ const LLMSettingsContent: React.FC = () => {
                 ? <>Key format: <code>pplx-…</code> — <a href="https://www.perplexity.ai/settings/api" target="_blank" rel="noreferrer" style={{ color: '#06B6D4' }}>perplexity.ai/settings/api ↗</a></>
                 : <>Same OpenRouter key as above, or a separate one. Routes to <code>perplexity/sonar-*</code> models.</>
               }
+            </p>
+            <p style={hintStyle}>
+              With <code>VITE_WEB_SEARCH_PROVIDER=openrouter</code>, web search can reuse <code>VITE_OPENROUTER_API_KEY</code> automatically.
             </p>
           </div>
 

@@ -53,7 +53,7 @@ export const TopBar: React.FC = () => {
           AA
         </span>
         <span className="text-[11px] px-1.5 py-0.5 rounded font-semibold" style={{ background: 'rgba(167,139,250,0.15)', color: '#A78BFA' }}>
-          v32.16
+          v33
         </span>
         {apiKey && (
           <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold hidden sm:inline" style={{ background: 'rgba(52,211,153,0.12)', color: '#34D399' }}>

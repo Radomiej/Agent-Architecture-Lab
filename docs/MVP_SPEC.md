@@ -1,6 +1,6 @@
 # MVP Specification — Agent Architecture Designer
 
-**Version:** React MVP (post-v32.16)
+**Version:** React MVP v33
 **Date:** 2026-04-12
 **Status:** React migration complete; MVP feature-complete and live
 
@@ -159,7 +159,7 @@ react-app/
 | `llmStore` | LLM config (provider, key, model IDs), debug log |
 | `uiStore` | Active modal, sidebar state, theme |
 | `costStore` | Cost calculations, what-if sliders |
-| `presetStore` | Custom agents (localStorage `acV32_16_custom`) |
+| `presetStore` | Custom agents (localStorage `acV33_custom`) |
 
 ---
 
