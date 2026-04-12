@@ -1,7 +1,7 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 
 // Helper: load Solo preset (2 nodes) so cost/mermaid data is non-empty
-async function loadSoloPreset(page: import('@playwright/test').Page) {
+async function loadSoloPreset(page: Page) {
   const sidebar = page.getByRole('complementary', { name: 'Left sidebar' })
   await sidebar.getByRole('tab', { name: 'Presety' }).click()
   await sidebar.getByRole('button', { name: 'Solo' }).click()
