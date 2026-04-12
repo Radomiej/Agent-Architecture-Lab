@@ -60,38 +60,38 @@ function AppLayout() {
 
       <TopBar />
 
-      {/* Mobile drawer: Left sidebar */}
+      {/* Mobile drawer: Left sidebar — stops above MobileNav (bottom-14), starts below TopBar (top-12) */}
       {leftDrawerOpen && (
-        <div
-          className="fixed inset-0 z-50 flex md:hidden"
-          onClick={() => setLeftDrawer(false)}
-        >
+        <>
           <div
-            className="w-72 h-full flex flex-col shadow-2xl animate-[slideInLeft_0.22s_ease-out]"
+            data-testid="left-drawer-backdrop"
+            className="fixed inset-x-0 top-0 bottom-14 z-[45] bg-black/50 backdrop-blur-sm md:hidden"
+            onClick={() => setLeftDrawer(false)}
+          />
+          <div
+            className="fixed left-0 top-12 bottom-14 z-[50] w-72 flex flex-col shadow-2xl animate-[slideInLeft_0.22s_ease-out] md:hidden overflow-hidden"
             style={{ background: 'var(--bg-panel)' }}
-            onClick={(e) => e.stopPropagation()}
           >
             <LeftSidebar />
           </div>
-          <div className="flex-1 bg-black/50 backdrop-blur-sm" />
-        </div>
+        </>
       )}
 
-      {/* Mobile drawer: Right sidebar */}
+      {/* Mobile drawer: Right sidebar — stops above MobileNav (bottom-14), starts below TopBar (top-12) */}
       {rightDrawerOpen && (
-        <div
-          className="fixed inset-0 z-50 flex flex-row-reverse md:hidden"
-          onClick={() => setRightDrawer(false)}
-        >
+        <>
           <div
-            className="w-80 h-full flex flex-col shadow-2xl animate-[slideInRight_0.22s_ease-out]"
+            data-testid="right-drawer-backdrop"
+            className="fixed inset-x-0 top-0 bottom-14 z-[45] bg-black/50 backdrop-blur-sm md:hidden"
+            onClick={() => setRightDrawer(false)}
+          />
+          <div
+            className="fixed right-0 top-12 bottom-14 z-[50] w-80 flex flex-col shadow-2xl animate-[slideInRight_0.22s_ease-out] md:hidden overflow-hidden"
             style={{ background: 'var(--bg-panel)' }}
-            onClick={(e) => e.stopPropagation()}
           >
             <RightSidebar />
           </div>
-          <div className="flex-1 bg-black/50 backdrop-blur-sm" />
-        </div>
+        </>
       )}
 
       {/* Desktop 3-column layout */}
