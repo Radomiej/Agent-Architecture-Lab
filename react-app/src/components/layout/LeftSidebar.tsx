@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useUiStore } from '../../store/uiStore'
 import { usePresetStore } from '../../store/presetStore'
 import { useCanvasStore } from '../../store/canvasStore'
-import { AD, PCAT, PHASES } from '../../data/agents'
+import { AD, AD_MAP, PCAT, PHASES } from '../../data/agents'
 import { PRESET_MAP } from '../../data/presets'
 import { AgentIcon } from '../primitives/AgentIcon'
 import { PhaseChip } from '../primitives/PhaseChip'
@@ -63,8 +63,8 @@ export const LeftSidebar: React.FC = () => {
             type="search"
             value={agentPaletteSearch}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder={sidebarTab === 'agents' ? 'Szukaj agenta...' : 'Szukaj presetu...'}
-            aria-label="Szukaj"
+            placeholder={sidebarTab === 'agents' ? t('sidebar.searchAgents', 'Search agents...') : t('sidebar.searchPresets', 'Search presets...')}
+            aria-label={t('sidebar.search', 'Search')}
             className="w-full px-2.5 py-1.5 rounded-md text-xs outline-none box-border"
             style={{
               background: 'var(--bg-input)',
@@ -152,11 +152,19 @@ const AgentList: React.FC<{
   )
 }
 
+const MODEL_DOT_COLORS: Record<string, string> = {
+  opus: '#F59E0B',
+  sonnet: '#8B5CF6',
+  haiku: '#34D399',
+}
+
 const PresetList: React.FC<{
   onSelect: (id: string) => void
   theme: 'dark' | 'light'
   search: string
 }> = ({ onSelect, theme, search }) => {
+  const { t: tPresets } = useTranslation('presets')
+
   return (
     <>
       {PCAT.map((cat) => {
@@ -169,7 +177,22 @@ const PresetList: React.FC<{
             </div>
             {filtered.map((id) => {
               const color = getPresetColor(id, theme)
-              const label = id.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+              const preset = PRESET_MAP.get(id)
+              const nodeCount = preset?.nodes.length ?? 0
+              const fallbackName = id.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+              const name: string = tPresets(`${id}.name`, { defaultValue: fallbackName })
+              const mid: string = tPresets(`${id}.mid`, { defaultValue: preset?.desc ?? '' })
+              const isNew = preset?.tier === 'new'
+
+              // Derive model mix from preset nodes
+              const modelMix: Record<string, number> = {}
+              if (preset) {
+                for (const n of preset.nodes) {
+                  const model = n.m ?? AD_MAP.get(n.id)?.model ?? 'sonnet'
+                  modelMix[model] = (modelMix[model] ?? 0) + 1
+                }
+              }
+
               return (
                 <div
                   key={id}
@@ -177,13 +200,60 @@ const PresetList: React.FC<{
                   tabIndex={0}
                   onClick={() => onSelect(id)}
                   onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onSelect(id)}
-                  className="flex items-center gap-2 px-3 py-1.5 cursor-pointer transition-colors hover:bg-[var(--state-hover)] focus-visible:outline-none focus-visible:bg-[var(--state-focus)]"
+                  className="flex items-start gap-2 px-3 py-2 cursor-pointer transition-colors hover:bg-[var(--state-hover)] focus-visible:outline-none focus-visible:bg-[var(--state-focus)]"
                 >
+                  {/* Preset icon */}
                   <div
-                    className="w-1.5 h-1.5 rounded-full shrink-0"
-                    style={{ background: color }}
-                  />
-                  <span className="text-xs truncate" style={{ color: 'var(--t1)' }}>{label}</span>
+                    className="flex items-center justify-center shrink-0 rounded-lg mt-0.5"
+                    style={{
+                      width: 30,
+                      height: 30,
+                      background: `rgba(${hexToRgb(color)},0.15)`,
+                      border: `1px solid rgba(${hexToRgb(color)},0.3)`,
+                    }}
+                  >
+                    <AgentIcon id={id} size={16} color={color} isPreset />
+                  </div>
+
+                  {/* Text content */}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-semibold truncate" style={{ color: 'var(--t1)' }}>{name}</span>
+                      {isNew && (
+                        <span
+                          className="shrink-0 text-[8px] font-bold uppercase leading-none rounded px-1 py-[2px]"
+                          style={{ color: '#34D399', background: 'rgba(52,211,153,0.14)', border: '1px solid rgba(52,211,153,0.3)' }}
+                        >
+                          NEW
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      {/* Agent count badge */}
+                      <span className="text-[10px] font-semibold shrink-0" style={{ color: 'var(--t3)' }}>
+                        {nodeCount}
+                      </span>
+                      {/* Model mix dots */}
+                      <span className="flex items-center gap-px shrink-0">
+                        {Object.entries(modelMix).map(([model, count]) => (
+                          <span key={model} className="flex items-center gap-px" title={`${count} ${model}`}>
+                            {Array.from({ length: count }).map((_, i) => (
+                              <span
+                                key={i}
+                                className="inline-block rounded-full"
+                                style={{ width: 5, height: 5, background: MODEL_DOT_COLORS[model] ?? '#8089A0' }}
+                              />
+                            ))}
+                          </span>
+                        ))}
+                      </span>
+                    </div>
+                    {mid && (
+                      <div className="text-[10px] leading-tight mt-0.5 line-clamp-2" style={{ color: 'var(--t3)' }}>
+                        {mid}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )
             })}
@@ -195,10 +265,11 @@ const PresetList: React.FC<{
 }
 
 const SavedList: React.FC<{ configs: { name: string; data: unknown }[] }> = ({ configs }) => {
+  const { t } = useTranslation()
   if (configs.length === 0) {
     return (
       <div className="px-4 py-6 text-center text-xs" style={{ color: 'var(--t3)' }}>
-        Brak zapisanych konfiguracji
+        {t('sidebar.noSaved', 'No saved configurations')}
       </div>
     )
   }

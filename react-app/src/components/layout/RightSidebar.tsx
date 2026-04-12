@@ -1,12 +1,13 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { useUiStore } from '../../store/uiStore'
 import { AD_MAP } from '../../data/agents'
+import { PRESET_MAP } from '../../data/presets'
 import { AgentIcon } from '../primitives/AgentIcon'
 import { PhaseChip } from '../primitives/PhaseChip'
 import { ModelBadge } from '../primitives/ModelBadge'
 import { VerdictPanel } from '../primitives/VerdictPanel'
-import { getAgentColor } from '../../data/agentColors'
-import { AGENT_KNOWLEDGE } from '../../data/agentKnowledge'
+import { getAgentColor, getPresetColor } from '../../data/agentColors'
 import { useSimulationStore } from '../../store/simulationStore'
 
 export const RightSidebar: React.FC = () => {
@@ -34,19 +35,28 @@ export const RightSidebar: React.FC = () => {
   )
 }
 
-const EmptyState: React.FC = () => (
-  <div className="flex-1 flex flex-col items-center justify-center gap-2 p-6 text-center text-xs" style={{ color: 'var(--t4)' }}>
-    <span className="text-3xl opacity-30">⬡</span>
-    <span>Kliknij agenta lub preset aby zobaczyc szczegoly</span>
-  </div>
-)
+const EmptyState: React.FC = () => {
+  const { t } = useTranslation()
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center gap-2 p-6 text-center text-xs" style={{ color: 'var(--t4)' }}>
+      <span className="text-3xl opacity-30">⬡</span>
+      <span>{t('sidebar.emptyHint')}</span>
+    </div>
+  )
+}
 
 const AgentDetail: React.FC<{ id: string; theme: 'dark' | 'light' }> = ({ id, theme }) => {
+  const { t } = useTranslation()
+  const { t: tAgents } = useTranslation('agents')
   const agent = AD_MAP.get(id)
   if (!agent) return null
 
   const color = getAgentColor(id, theme)
-  const knowledge = AGENT_KNOWLEDGE[id]
+
+  const agentName: string = tAgents(`${id}.name`, { defaultValue: agent.name })
+  const mid: string = tAgents(`${id}.mid`, { defaultValue: '' })
+  const green = tAgents(`${id}.green`, { returnObjects: true, defaultValue: [] }) as string[]
+  const red = tAgents(`${id}.red`, { returnObjects: true, defaultValue: [] }) as string[]
 
   return (
     <div className="flex-1 overflow-y-auto p-4">
@@ -64,7 +74,7 @@ const AgentDetail: React.FC<{ id: string; theme: 'dark' | 'light' }> = ({ id, th
           <AgentIcon id={id} size={24} color={color} />
         </div>
         <div className="min-w-0">
-          <h2 className="m-0 text-base font-bold" style={{ color: 'var(--t1)' }}>{agent.name}</h2>
+          <h2 className="m-0 text-base font-bold" style={{ color: 'var(--t1)' }}>{agentName}</h2>
           <div className="flex gap-1.5 mt-1 flex-wrap">
             <PhaseChip phase={agent.phase} small />
             <ModelBadge model={agent.model} small />
@@ -72,13 +82,15 @@ const AgentDetail: React.FC<{ id: string; theme: 'dark' | 'light' }> = ({ id, th
         </div>
       </div>
 
-      {/* Role */}
-      <Section label="ROLA">
-        <p className="m-0 text-xs leading-relaxed" style={{ color: 'var(--t2)' }}>{agent.role}</p>
-      </Section>
+      {/* Key competencies (mid) */}
+      {mid && (
+        <Section label={t('sidebar.role')}>
+          <p className="m-0 text-xs leading-relaxed" style={{ color: 'var(--t2)' }}>{mid}</p>
+        </Section>
+      )}
 
       {/* Tools */}
-      <Section label="NARZEDZIA">
+      <Section label={t('sidebar.tools')}>
         <div className="flex flex-wrap gap-1">
           {agent.tools.split(',').map((tool) => (
             <span key={tool.trim()} className="px-2 py-0.5 rounded text-[11px]" style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--t2)' }}>
@@ -88,45 +100,145 @@ const AgentDetail: React.FC<{ id: string; theme: 'dark' | 'light' }> = ({ id, th
         </div>
       </Section>
 
-      {/* Knowledge */}
-      {knowledge && (
-        <>
-          <Section label="CO ROBI">
-            <ul className="m-0 p-0 list-none flex flex-col gap-1">
-              {knowledge.does.map((item, i) => (
-                <li key={i} className="flex gap-1.5 text-xs" style={{ color: 'var(--t2)' }}>
-                  <span className="shrink-0" style={{ color: '#34D399' }}>✓</span>{item}
-                </li>
-              ))}
-            </ul>
-          </Section>
-
-          <Section label="CZEGO NIE ROBI">
-            <ul className="m-0 p-0 list-none flex flex-col gap-1">
-              {knowledge.doesNot.map((item, i) => (
-                <li key={i} className="flex gap-1.5 text-xs" style={{ color: 'var(--t2)' }}>
-                  <span className="shrink-0" style={{ color: '#F87171' }}>✗</span>{item}
-                </li>
-              ))}
-            </ul>
-          </Section>
-
-          <VerdictPanel green={knowledge.does} red={knowledge.doesNot} />
-        </>
+      {/* Verdict panel: when to use / when not to use */}
+      {(green.length > 0 || red.length > 0) && (
+        <VerdictPanel
+          green={green}
+          red={red}
+          greenLabel={t('sidebar.whenToUse')}
+          redLabel={t('sidebar.whenNotToUse')}
+        />
       )}
     </div>
   )
 }
 
+const MODEL_COLORS: Record<string, { color: string; rgb: string }> = {
+  opus:   { color: '#F59E0B', rgb: '245,158,11' },
+  sonnet: { color: '#8B5CF6', rgb: '139,92,246' },
+  haiku:  { color: '#34D399', rgb: '52,211,153' },
+}
+
 const PresetDetail: React.FC<{ id: string }> = ({ id }) => {
-  const label = id.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+  const { t } = useTranslation()
+  const { t: tPresets } = useTranslation('presets')
+  const theme = useUiStore((s) => s.theme)
+  const color = getPresetColor(id, theme)
+  const preset = PRESET_MAP.get(id)
+
+  const fallbackName = id.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+  const name: string = tPresets(`${id}.name`, { defaultValue: fallbackName })
+  const mid: string = tPresets(`${id}.mid`, { defaultValue: '' })
+  const green = tPresets(`${id}.green`, { returnObjects: true, defaultValue: [] }) as string[]
+  const red = tPresets(`${id}.red`, { returnObjects: true, defaultValue: [] }) as string[]
+
+  // Derive model mix
+  const modelMix: Record<string, number> = {}
+  if (preset) {
+    for (const n of preset.nodes) {
+      const model = n.m ?? AD_MAP.get(n.id)?.model ?? 'sonnet'
+      modelMix[model] = (modelMix[model] ?? 0) + 1
+    }
+  }
+  const nodeCount = preset?.nodes.length ?? 0
 
   return (
     <div className="flex-1 overflow-y-auto p-4">
-      <h2 className="m-0 mb-3 text-base font-bold" style={{ color: 'var(--t1)' }}>{label}</h2>
-      <p className="m-0 text-xs" style={{ color: 'var(--t3)' }}>
-        Szczegoly presetu beda dostepne po zaladowaniu danych z i18n.
-      </p>
+      {/* Header with icon */}
+      <div className="flex gap-3 items-start mb-4">
+        <div
+          className="flex items-center justify-center shrink-0 rounded-xl"
+          style={{
+            width: 48,
+            height: 48,
+            background: `rgba(${hexToRgb(color)},0.15)`,
+            border: `1px solid rgba(${hexToRgb(color)},0.3)`,
+          }}
+        >
+          <AgentIcon id={id} size={24} color={color} isPreset />
+        </div>
+        <div className="min-w-0">
+          <h2 className="m-0 text-base font-bold" style={{ color: 'var(--t1)' }}>{name}</h2>
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
+            <span className="text-[11px] font-semibold" style={{ color: 'var(--t3)' }}>
+              {nodeCount} {nodeCount === 1 ? 'agent' : t('sidebar.agents', 'agents')}
+            </span>
+            {/* Model mix chips */}
+            {Object.entries(modelMix).map(([model, count]) => {
+              const cfg = MODEL_COLORS[model]
+              if (!cfg) return null
+              return (
+                <span
+                  key={model}
+                  className="inline-flex items-center gap-1 rounded-full text-[10px] font-semibold px-1.5 py-px"
+                  style={{
+                    color: cfg.color,
+                    background: `rgba(${cfg.rgb},0.12)`,
+                    border: `1px solid rgba(${cfg.rgb},0.25)`,
+                  }}
+                >
+                  <span className="inline-block rounded-full" style={{ width: 5, height: 5, background: cfg.color }} />
+                  {count} {model.charAt(0).toUpperCase() + model.slice(1)}
+                </span>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+
+      {mid && (
+        <p className="m-0 mb-3 text-xs leading-relaxed" style={{ color: 'var(--t3)' }}>{mid}</p>
+      )}
+
+      {/* Agent list */}
+      {preset && preset.nodes.length > 0 && (
+        <Section label={t('sidebar.composition', 'Composition')}>
+          <div className="flex flex-col gap-1">
+            {preset.nodes.map((n, idx) => {
+              const agentDef = AD_MAP.get(n.id)
+              const agentModel = n.m ?? agentDef?.model ?? 'sonnet'
+              const agentColor = getAgentColor(n.id, theme)
+              return (
+                <div key={`${n.id}-${idx}`} className="flex items-center gap-2">
+                  <div
+                    className="flex items-center justify-center shrink-0 rounded"
+                    style={{
+                      width: 20,
+                      height: 20,
+                      background: `rgba(${hexToRgb(agentColor)},0.12)`,
+                    }}
+                  >
+                    <AgentIcon id={n.id} size={12} color={agentColor} />
+                  </div>
+                  <span className="text-[11px] flex-1 truncate" style={{ color: 'var(--t1)' }}>
+                    {agentDef?.name ?? n.id}
+                  </span>
+                  <span
+                    className="text-[9px] font-bold uppercase"
+                    style={{ color: MODEL_COLORS[agentModel]?.color ?? 'var(--t4)' }}
+                  >
+                    {agentModel}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </Section>
+      )}
+
+      {(green.length > 0 || red.length > 0) && (
+        <VerdictPanel
+          green={green}
+          red={red}
+          greenLabel={t('sidebar.whenToUse')}
+          redLabel={t('sidebar.whenNotToUse')}
+        />
+      )}
+      {green.length === 0 && red.length === 0 && !mid && (
+        <p className="m-0 text-xs" style={{ color: 'var(--t3)' }}>
+          {t('sidebar.presetNoData', { defaultValue: 'No detailed data available for this preset.' })}
+        </p>
+      )}
     </div>
   )
 }
@@ -148,6 +260,7 @@ function hexToRgb(hex: string): string {
 }
 
 const SimulationTimeline: React.FC<{ messages: Array<{ agentId: string; text: string; timestamp: number; phase?: string }>; isRunning: boolean; phase: string }> = ({ messages, isRunning, phase }) => {
+  const { t } = useTranslation()
   if (!isRunning && messages.length === 0) return null
 
   const recent = [...messages].slice(-10).reverse()
@@ -170,7 +283,7 @@ const SimulationTimeline: React.FC<{ messages: Array<{ agentId: string; text: st
       <div className="max-h-40 overflow-y-auto flex flex-col gap-1 pr-1">
         {recent.length === 0 && (
           <div className="text-[11px]" style={{ color: 'var(--t4)' }}>
-            Brak komunikatow symulacji.
+            {t('sidebar.noMessages', 'No simulation messages.')}
           </div>
         )}
 

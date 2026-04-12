@@ -65,6 +65,7 @@
   "sidebar": {
     "agentDetails": "Szczegoly agenta",
     "presetDetails": "Szczegoly presetu",
+    "emptyHint": "Kliknij agenta lub preset aby zobaczyc szczegoly",
     "tools": "NARZEDZIA",
     "model": "MODEL",
     "phase": "FAZA",
@@ -77,6 +78,13 @@
     "showPrompt": "Pokaz prompt",
     "whenToUse": "KIEDY UZYWAC",
     "whenNotToUse": "KIEDY NIE UZYWAC",
+    "composition": "SKLAD",
+    "agents": "agentow",
+    "searchAgents": "Szukaj agenta...",
+    "searchPresets": "Szukaj presetu...",
+    "search": "Szukaj",
+    "noSaved": "Brak zapisanych konfiguracji",
+    "noMessages": "Brak komunikatow symulacji.",
     "detailed": "SZCZEGOLOWY OPIS",
     "similar": "PODOBNI AGENCI"
   },

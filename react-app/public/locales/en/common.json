@@ -65,6 +65,7 @@
   "sidebar": {
     "agentDetails": "Agent details",
     "presetDetails": "Preset details",
+    "emptyHint": "Click an agent or preset to see details",
     "tools": "TOOLS",
     "model": "MODEL",
     "phase": "PHASE",
@@ -77,6 +78,13 @@
     "showPrompt": "Show prompt",
     "whenToUse": "WHEN TO USE",
     "whenNotToUse": "WHEN NOT TO USE",
+    "composition": "COMPOSITION",
+    "agents": "agents",
+    "searchAgents": "Search agents...",
+    "searchPresets": "Search presets...",
+    "search": "Search",
+    "noSaved": "No saved configurations",
+    "noMessages": "No simulation messages.",
     "detailed": "DETAILED DESCRIPTION",
     "similar": "SIMILAR AGENTS"
   },

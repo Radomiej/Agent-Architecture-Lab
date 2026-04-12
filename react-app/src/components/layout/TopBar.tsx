@@ -76,6 +76,7 @@ export const TopBar: React.FC = () => {
         >
           <HudCell label={t('cost.title', 'KOSZT')} value={`${cost.p50Fmt}–${cost.p90Fmt}`} color={sevColor(cost.severity)} />
           <HudCell label="TOK" value={`${cost.tokInFmt}/${cost.tokOutFmt}`} color="var(--t3)" />
+          <HudMixCell mix={cost.modelMix} />
           <HudCell label="CTX" value={`${Math.round(ctx.maxPct * 100)}%`} color={sevColor(ctx.severity)} />
         </button>
       )}
@@ -144,3 +145,29 @@ const HudCell: React.FC<{ label: string; value: string; color: string }> = ({ la
   </div>
 )
 
+const MIX_COLORS: Record<string, { color: string; label: string }> = {
+  opus:   { color: '#F59E0B', label: 'O' },
+  sonnet: { color: '#8B5CF6', label: 'S' },
+  haiku:  { color: '#34D399', label: 'H' },
+}
+
+const HudMixCell: React.FC<{ mix: Record<string, number> }> = ({ mix }) => (
+  <div
+    className="flex flex-col items-center px-2 py-0.5 min-w-[48px]"
+    style={{ borderRight: '1px solid var(--border)' }}
+  >
+    <span className="text-[9px] font-bold uppercase tracking-widest" style={{ color: 'var(--t4)' }}>MIX</span>
+    <span className="flex items-center gap-1">
+      {Object.entries(MIX_COLORS).map(([model, cfg]) => {
+        const count = mix[model] ?? 0
+        if (count === 0) return null
+        return (
+          <span key={model} className="flex items-center gap-px">
+            <span className="inline-block rounded-full" style={{ width: 5, height: 5, background: cfg.color }} />
+            <span className="text-[10px] font-semibold" style={{ color: cfg.color }}>{count}{cfg.label}</span>
+          </span>
+        )
+      })}
+    </span>
+  </div>
+)

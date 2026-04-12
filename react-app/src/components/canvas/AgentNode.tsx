@@ -18,6 +18,12 @@ interface AgentNodeProps {
 
 const NODE_SIZE = 48
 
+const MODEL_BADGE_COLORS: Record<string, string> = {
+  opus: '#F59E0B',
+  sonnet: '#8B5CF6',
+  haiku: '#34D399',
+}
+
 export const AgentNode: React.FC<AgentNodeProps> = ({
   node,
   agentDef,
@@ -113,6 +119,20 @@ export const AgentNode: React.FC<AgentNodeProps> = ({
           }}
         >
           {agentDef.name}
+        </div>
+
+        {/* Model badge below name */}
+        <div
+          className="absolute text-[7px] font-bold uppercase text-center pointer-events-none tracking-widest"
+          style={{
+            top: NODE_SIZE + 17,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            color: MODEL_BADGE_COLORS[agentDef.model] ?? 'var(--t4)',
+            opacity: 0.7,
+          }}
+        >
+          {agentDef.model}
         </div>
 
         {/* Completed checkmark */}
