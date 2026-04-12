@@ -2,7 +2,9 @@ import React, { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useUiStore } from '../../store/uiStore'
 import { usePresetStore } from '../../store/presetStore'
+import { useCanvasStore } from '../../store/canvasStore'
 import { AD, PCAT, PHASES } from '../../data/agents'
+import { PRESET_MAP } from '../../data/presets'
 import { AgentIcon } from '../primitives/AgentIcon'
 import { PhaseChip } from '../primitives/PhaseChip'
 import { getAgentColor, getPresetColor } from '../../data/agentColors'
@@ -13,6 +15,7 @@ export const LeftSidebar: React.FC = () => {
   const { t } = useTranslation()
   const { sidebarTab, setSidebarTab, agentPaletteSearch, setSearch, selectAgent, selectPreset, theme } = useUiStore()
   const { customAgents, savedConfigs } = usePresetStore()
+  const loadPreset = useCanvasStore((s) => s.loadPreset)
 
   const allAgents = useMemo(() => [...AD, ...customAgents], [customAgents])
 
@@ -103,7 +106,7 @@ export const LeftSidebar: React.FC = () => {
           <AgentList groups={groupedAgents} onSelect={selectAgent} theme={theme} />
         )}
         {sidebarTab === 'presets' && (
-          <PresetList onSelect={selectPreset} theme={theme} search={agentPaletteSearch} />
+          <PresetList onSelect={(id) => { selectPreset(id); const p = PRESET_MAP.get(id); if (p) loadPreset(p) }} theme={theme} search={agentPaletteSearch} />
         )}
         {sidebarTab === 'saved' && (
           <SavedList configs={savedConfigs} />

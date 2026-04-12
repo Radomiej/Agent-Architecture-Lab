@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { CanvasNode, Connection } from '../types'
-import type { Preset } from '../types'
+import type { PresetDef } from '../data/presets'
 
 interface CanvasStore {
   nodes: CanvasNode[]
@@ -19,7 +19,7 @@ interface CanvasStore {
   setZoom: (zoom: number) => void
   setPan: (pan: { x: number; y: number }) => void
   clearCanvas: () => void
-  loadPreset: (preset: Preset) => void
+  loadPreset: (preset: PresetDef) => void
 }
 
 export const useCanvasStore = create<CanvasStore>((set, get) => ({
@@ -77,31 +77,29 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   clearCanvas: () => set({ nodes: [], connections: [], selected: [] }),
 
   loadPreset: (preset) => {
-    const nodes: CanvasNode[] = preset.nodes.map((pn) => ({
-      id: `${pn.id}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    const ts = Date.now()
+    const nodes: CanvasNode[] = preset.nodes.map((pn, i) => ({
+      id: `${pn.id}-${ts}-${i}`,
       agentId: pn.id,
       x: pn.x,
       y: pn.y,
-      connections: pn.c ?? [],
+      connections: [],
     }))
 
-    const idMap = new Map<string, string>()
-    preset.nodes.forEach((pn, i) => idMap.set(pn.id, nodes[i].id))
-
     const connections: Connection[] = []
-    nodes.forEach((node, i) => {
-      const pn = preset.nodes[i]
+    preset.nodes.forEach((pn, i) => {
       if (pn.c) {
-        pn.c.forEach((targetPresetId) => {
-          const targetNodeId = idMap.get(targetPresetId)
-          if (targetNodeId) {
-            connections.push({ from: node.id, to: targetNodeId })
+        for (const targetIdx of pn.c) {
+          if (targetIdx < 0 || targetIdx >= nodes.length) {
+            console.warn(`Preset "${preset.id}" node[${i}] has out-of-bounds connection index ${targetIdx}`)
+            continue
           }
-        })
+          const targetNode = nodes[targetIdx]
+          if (targetNode) {
+            connections.push({ from: nodes[i].id, to: targetNode.id })
+          }
+        }
       }
-      node.connections = node.connections
-        .map((cid) => idMap.get(cid) ?? cid)
-        .filter(Boolean)
     })
 
     const { clearCanvas } = get()
