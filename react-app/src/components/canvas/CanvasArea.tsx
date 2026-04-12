@@ -140,7 +140,7 @@ export const CanvasArea: React.FC = () => {
               node={node}
               agentDef={agentDef}
               isSelected={selected.includes(node.id)}
-              isActive={activeAgents.includes(node.agentId)}
+              isActive={activeAgents.includes(node.id)}
               isCompleted={completedPhases.includes(agentDef.phase)}
               onMouseDown={(e) => {
                 e.stopPropagation()

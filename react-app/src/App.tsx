@@ -1,4 +1,4 @@
-import { Suspense, useEffect } from 'react'
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import './styles/tokens.css'
 import './styles/animations.css'
 import { useTheme } from './hooks/useTheme'
@@ -14,12 +14,111 @@ import { MobileNav } from './components/layout/MobileNav'
 import { useUiStore } from './store/uiStore'
 import { useCanvasStore } from './store/canvasStore'
 import { useSimulationStore } from './store/simulationStore'
+import { AD_MAP } from './data/agents'
+import { ToastContainer } from './components/primitives/Toast'
 
 function AppLayout() {
   useTheme()
   const { openModal, activeModal, closeModal, leftDrawerOpen, rightDrawerOpen, setLeftDrawer, setRightDrawer } = useUiStore()
-  const { selected, removeNode } = useCanvasStore()
-  const { toggleDebugPanel } = useSimulationStore()
+  const { selected, removeNode, nodes } = useCanvasStore()
+  const {
+    toggleDebugPanel,
+    isRunning,
+    isPaused,
+    step,
+    nextStep,
+    setActiveAgents,
+    completePhase,
+    addMessage,
+    stop,
+    messages,
+  } = useSimulationStore()
+  const [toasts, setToasts] = useState<Array<{ id: string; message: string; type?: 'info' | 'success' | 'warn' | 'error' }>>([])
+  const msgCursorRef = useRef(0)
+
+  const simulationOrder = useMemo(() => {
+    const phaseRank: Record<string, number> = {
+      strategy: 0,
+      research: 1,
+      debate1: 2,
+      debate2: 3,
+      build: 4,
+      qa: 5,
+      hitl: 6,
+    }
+
+    return [...nodes]
+      .filter((node) => AD_MAP.has(node.agentId))
+      .sort((a, b) => {
+        const aPhase = AD_MAP.get(a.agentId)?.phase ?? 'strategy'
+        const bPhase = AD_MAP.get(b.agentId)?.phase ?? 'strategy'
+        const rankDiff = (phaseRank[aPhase] ?? 99) - (phaseRank[bPhase] ?? 99)
+        if (rankDiff !== 0) return rankDiff
+        if (a.x !== b.x) return a.x - b.x
+        return a.y - b.y
+      })
+  }, [nodes])
+
+  useEffect(() => {
+    if (!isRunning || isPaused) return
+
+    if (simulationOrder.length === 0) return
+
+    if (step >= simulationOrder.length) {
+      setActiveAgents([])
+      addMessage({
+        agentId: 'orchestrator',
+        text: 'Symulacja zakonczona. Wszystkie kroki zostaly wykonane.',
+        timestamp: Date.now(),
+        phase: 'strategy',
+      })
+      stop()
+      return
+    }
+
+    const node = simulationOrder[step]
+    const agent = AD_MAP.get(node.agentId)
+    if (!agent) {
+      nextStep()
+      return
+    }
+
+    setActiveAgents([node.id])
+    addMessage({
+      agentId: agent.id,
+      text: `Przetwarzam etap ${agent.phase} i przygotowuje wynik dla kolejnych agentow.`,
+      timestamp: Date.now(),
+      phase: agent.phase,
+    })
+
+    const timer = window.setTimeout(() => {
+      setActiveAgents([])
+      completePhase(agent.phase)
+      nextStep()
+    }, 900)
+
+    return () => window.clearTimeout(timer)
+  }, [isRunning, isPaused, simulationOrder, step, setActiveAgents, addMessage, completePhase, nextStep, stop])
+
+  useEffect(() => {
+    if (messages.length <= msgCursorRef.current) return
+    const latest = messages[messages.length - 1]
+    if (!latest) return
+    msgCursorRef.current = messages.length
+
+    const agentName = AD_MAP.get(latest.agentId)?.name ?? latest.agentId
+    const preview = latest.text.length > 88 ? `${latest.text.slice(0, 88)}...` : latest.text
+    const type: 'info' | 'success' = latest.text.startsWith('Symulacja zakonczona') ? 'success' : 'info'
+
+    setToasts((prev) => [
+      ...prev.slice(-2),
+      {
+        id: `${latest.timestamp}-${messages.length}`,
+        message: `${agentName}: ${preview}`,
+        type,
+      },
+    ])
+  }, [messages])
 
   // Global keyboard shortcuts
   useEffect(() => {
@@ -121,6 +220,9 @@ function AppLayout() {
 
       {/* Debug panel */}
       <DebugPanel />
+
+      {/* Toast notifications for simulation and agent activity */}
+      <ToastContainer toasts={toasts} onDismiss={(id) => setToasts((prev) => prev.filter((t) => t.id !== id))} />
     </div>
   )
 }

@@ -7,9 +7,11 @@ import { ModelBadge } from '../primitives/ModelBadge'
 import { VerdictPanel } from '../primitives/VerdictPanel'
 import { getAgentColor } from '../../data/agentColors'
 import { AGENT_KNOWLEDGE } from '../../data/agentKnowledge'
+import { useSimulationStore } from '../../store/simulationStore'
 
 export const RightSidebar: React.FC = () => {
   const { selectedAgentId, selectedPresetId, theme } = useUiStore()
+  const { messages, isRunning, phase } = useSimulationStore()
 
   if (!selectedAgentId && !selectedPresetId) {
     return (
@@ -18,6 +20,7 @@ export const RightSidebar: React.FC = () => {
         aria-label="Right sidebar"
       >
         <EmptyState />
+        <SimulationTimeline messages={messages} isRunning={isRunning} phase={phase} />
       </aside>
     )
   }
@@ -26,6 +29,7 @@ export const RightSidebar: React.FC = () => {
     <aside className="flex flex-col h-full overflow-hidden w-full" aria-label="Agent/preset details">
       {selectedAgentId && <AgentDetail id={selectedAgentId} theme={theme} />}
       {selectedPresetId && <PresetDetail id={selectedPresetId} />}
+      <SimulationTimeline messages={messages} isRunning={isRunning} phase={phase} />
     </aside>
   )
 }
@@ -141,5 +145,48 @@ function hexToRgb(hex: string): string {
   const g = parseInt(hex.slice(3, 5), 16)
   const b = parseInt(hex.slice(5, 7), 16)
   return `${r},${g},${b}`
+}
+
+const SimulationTimeline: React.FC<{ messages: Array<{ agentId: string; text: string; timestamp: number; phase?: string }>; isRunning: boolean; phase: string }> = ({ messages, isRunning, phase }) => {
+  if (!isRunning && messages.length === 0) return null
+
+  const recent = [...messages].slice(-10).reverse()
+
+  return (
+    <section
+      className="shrink-0 border-t px-3 py-2"
+      style={{ borderColor: 'var(--border)', background: 'var(--bg-input)' }}
+      aria-label="Dialog Timeline"
+    >
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="text-[10px] font-bold uppercase tracking-[0.06em]" style={{ color: 'var(--t4)' }}>
+          Dialog Timeline
+        </span>
+        <span className="text-[10px]" style={{ color: isRunning ? '#34D399' : 'var(--t4)' }}>
+          {isRunning ? `LIVE · ${phase}` : 'IDLE'}
+        </span>
+      </div>
+
+      <div className="max-h-40 overflow-y-auto flex flex-col gap-1 pr-1">
+        {recent.length === 0 && (
+          <div className="text-[11px]" style={{ color: 'var(--t4)' }}>
+            Brak komunikatow symulacji.
+          </div>
+        )}
+
+        {recent.map((msg, idx) => {
+          const agent = AD_MAP.get(msg.agentId)
+          const phaseLabel = msg.phase ? `[${msg.phase}] ` : ''
+          return (
+            <div key={`${msg.timestamp}-${idx}`} className="text-[11px] leading-snug" style={{ color: 'var(--t2)' }}>
+              <span style={{ color: 'var(--t4)' }}>{phaseLabel}</span>
+              <span className="font-semibold" style={{ color: 'var(--t1)' }}>{agent?.name ?? msg.agentId}</span>
+              <span>: {msg.text}</span>
+            </div>
+          )
+        })}
+      </div>
+    </section>
+  )
 }
 
