@@ -1,5 +1,8 @@
 import { test, expect } from '@playwright/test'
 
+const EMPTY_CANVAS_HINT = 'Przeciagnij agenta'
+const EMPTY_SAVED_MSG = 'Brak zapisanych konfiguracji'
+
 test.describe('Canvas interactions', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/')
@@ -19,7 +22,7 @@ test.describe('Canvas interactions', () => {
     const canvas = page.getByRole('main', { name: 'Canvas area' })
     await expect(canvas.getByRole('button', { name: /Agent Orkiestrator/i })).toBeVisible()
     await expect(canvas.getByRole('button', { name: /Agent Backend/i })).toBeVisible()
-    await expect(canvas.locator('text=Przeciagnij agenta')).toHaveCount(0)
+    await expect(canvas.locator(`text=${EMPTY_CANVAS_HINT}`)).toHaveCount(0)
   })
 
   test('loading a preset clears previous canvas contents', async ({ page }) => {
@@ -81,7 +84,7 @@ test.describe('Canvas interactions', () => {
     await page.keyboard.press('Delete')
 
     await expect(canvas.getByRole('button', { name: /Agent Orkiestrator/i })).toHaveCount(0)
-    await expect(canvas.locator('text=Przeciagnij agenta')).toBeVisible()
+    await expect(canvas.locator(`text=${EMPTY_CANVAS_HINT}`)).toBeVisible()
   })
 
   test('Delete key does nothing when no node is selected', async ({ page }) => {
@@ -130,7 +133,7 @@ test.describe('Canvas interactions', () => {
   test('Saved tab shows empty-state message when no configs exist', async ({ page }) => {
     const sidebar = page.getByRole('complementary', { name: 'Left sidebar' })
     await sidebar.getByRole('tab', { name: 'Zapisane' }).click()
-    await expect(sidebar.locator('text=Brak zapisanych konfiguracji')).toBeVisible()
+    await expect(sidebar.locator(`text=${EMPTY_SAVED_MSG}`)).toBeVisible()
   })
 
   // ─── Multi-node canvas state ──────────────────────────────────────────────
