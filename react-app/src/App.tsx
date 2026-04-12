@@ -65,6 +65,7 @@ function AppLayout() {
         <>
           <div
             data-testid="left-drawer-backdrop"
+            aria-label="Close menu"
             className="fixed inset-x-0 top-0 bottom-14 z-[45] bg-black/50 backdrop-blur-sm md:hidden"
             onClick={() => setLeftDrawer(false)}
           />
@@ -82,6 +83,7 @@ function AppLayout() {
         <>
           <div
             data-testid="right-drawer-backdrop"
+            aria-label="Close menu"
             className="fixed inset-x-0 top-0 bottom-14 z-[45] bg-black/50 backdrop-blur-sm md:hidden"
             onClick={() => setRightDrawer(false)}
           />

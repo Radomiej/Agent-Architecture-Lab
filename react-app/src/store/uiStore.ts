@@ -107,21 +107,21 @@ export const useUiStore = create<UiStore>((set) => ({
 
   selectAgent: (id) => set((s) => {
     // On mobile (left drawer open), auto-navigate to right panel
-    const mobile = id !== null && s.leftDrawerOpen
+    const shouldNavigate = id !== null && s.leftDrawerOpen
     return {
       selectedAgentId: id,
       selectedPresetId: null,
-      leftDrawerOpen: mobile ? false : s.leftDrawerOpen,
-      rightDrawerOpen: mobile ? true : s.rightDrawerOpen,
+      leftDrawerOpen: shouldNavigate ? false : s.leftDrawerOpen,
+      rightDrawerOpen: shouldNavigate ? true : s.rightDrawerOpen,
     }
   }),
   selectPreset: (id) => set((s) => {
-    const mobile = id !== null && s.leftDrawerOpen
+    const shouldNavigate = id !== null && s.leftDrawerOpen
     return {
       selectedPresetId: id,
       selectedAgentId: null,
-      leftDrawerOpen: mobile ? false : s.leftDrawerOpen,
-      rightDrawerOpen: mobile ? true : s.rightDrawerOpen,
+      leftDrawerOpen: shouldNavigate ? false : s.leftDrawerOpen,
+      rightDrawerOpen: shouldNavigate ? true : s.rightDrawerOpen,
     }
   }),
 
