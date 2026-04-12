@@ -19,7 +19,7 @@ function AppLayout() {
   useTheme()
   const { openModal, activeModal, closeModal } = useUiStore()
   const { selected, removeNode } = useCanvasStore()
-  const { toggleDebugPanel, hitlGateOpen, closeHitlGate } = useSimulationStore()
+  const { toggleDebugPanel, hitlGateOpen } = useSimulationStore()
 
   // Global keyboard shortcuts
   useEffect(() => {
@@ -28,7 +28,6 @@ function AppLayout() {
       const isInput = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT'
         || (document.activeElement as HTMLElement)?.isContentEditable
 
-      if (e.key === 'Escape' && hitlGateOpen) { closeHitlGate(); return }
       if (e.key === 'Escape' && activeModal) { closeModal(); return }
       if (isInput || activeModal || hitlGateOpen) return
 
@@ -45,7 +44,7 @@ function AppLayout() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [openModal, closeModal, activeModal, selected, removeNode, toggleDebugPanel, hitlGateOpen, closeHitlGate])
+  }, [openModal, closeModal, activeModal, selected, removeNode, toggleDebugPanel, hitlGateOpen])
 
   return (
     <div

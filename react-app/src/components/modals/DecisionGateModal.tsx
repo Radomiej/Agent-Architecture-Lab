@@ -1,10 +1,18 @@
 import React, { useEffect, useRef } from 'react'
 import { useSimulationStore, HITL_GATE_OPTIONS } from '../../store/simulationStore'
+import { AGENT_SVG } from '../../data/agentSvg'
 
 const OPTION_COLORS: Record<string, string> = {
   A: '#34D399', // green  — continue
   B: '#FBBF24', // amber  — adjust
   C: '#F87171', // red    — stop
+}
+
+// Semi-transparent hover backgrounds matching option colors
+const OPTION_HOVER_BG: Record<string, string> = {
+  A: 'rgba(52,211,153,0.06)',
+  B: 'rgba(251,191,36,0.06)',
+  C: 'rgba(248,113,113,0.06)',
 }
 
 export const DecisionGateModal: React.FC = () => {
@@ -74,7 +82,18 @@ export const DecisionGateModal: React.FC = () => {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '20px' }}>🎯</span>
+            <svg
+              viewBox="0 0 24 24"
+              width="22"
+              height="22"
+              fill="none"
+              stroke="#FBBF24"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              dangerouslySetInnerHTML={{ __html: AGENT_SVG.decision_presenter }}
+            />
             <div>
               <h2 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: 'var(--t1)' }}>
                 HITL Decision Gate
@@ -128,7 +147,7 @@ export const DecisionGateModal: React.FC = () => {
               onMouseEnter={(e) => {
                 const el = e.currentTarget
                 el.style.borderColor = OPTION_COLORS[opt.id]
-                el.style.background = `rgba(${opt.id === 'A' ? '52,211,153' : opt.id === 'B' ? '251,191,36' : '248,113,113'},0.06)`
+                el.style.background = OPTION_HOVER_BG[opt.id]
               }}
               onMouseLeave={(e) => {
                 const el = e.currentTarget

@@ -13,9 +13,9 @@ export interface HitlGateOption {
 }
 
 export const HITL_GATE_OPTIONS: HitlGateOption[] = [
-  { id: 'A', label: 'Kontynuuj plan',       desc: 'Proceed with the current plan as defined.' },
-  { id: 'B', label: 'Dostosuj zakres',      desc: 'Adjust scope or approach before continuing.' },
-  { id: 'C', label: 'Zatrzymaj i przejrzyj', desc: 'Stop simulation and review results so far.' },
+  { id: 'A', label: 'Kontynuuj plan',        desc: 'Kontynuuj zgodnie z aktualnym planem.' },
+  { id: 'B', label: 'Dostosuj zakres',       desc: 'Zmień zakres lub podejście przed kontynuacją.' },
+  { id: 'C', label: 'Zatrzymaj i przejrzyj', desc: 'Zatrzymaj symulację i przejrzyj dotychczasowe wyniki.' },
 ]
 
 interface SimulationStore {
@@ -50,7 +50,10 @@ interface SimulationStore {
   _updateLog: (id: string, patch: Partial<LLMCallLog>) => void
 }
 
-export const useSimulationStore = create<SimulationStore>((set, get) => ({
+export const useSimulationStore = create<SimulationStore>((set, get) => {
+  let hitlTimer: ReturnType<typeof setTimeout> | null = null
+
+  return {
   isRunning: false,
   isPaused: false,
   step: 0,
@@ -73,17 +76,22 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
   }),
 
   start: () => {
+    if (hitlTimer !== null) { clearTimeout(hitlTimer); hitlTimer = null }
     set({ isRunning: true, isPaused: false, step: 0, messages: [], completedPhases: [], phase: 'strategy', hitlGateOpen: false, hitlGateChoice: null })
     // If any decision_presenter (HITL) node is present, open the gate after a short delay
     const canvas = useCanvasStore.getState()
     const hitlNode = canvas.nodes.find((n) => n.agentId === 'decision_presenter')
     if (hitlNode) {
-      setTimeout(() => {
-        if (get().isRunning) get().openHitlGate(hitlNode.id)
+      hitlTimer = setTimeout(() => {
+        hitlTimer = null
+        if (get().isRunning && !get().hitlGateOpen) get().openHitlGate(hitlNode.id)
       }, 800)
     }
   },
-  stop: () => set({ isRunning: false, isPaused: false, activeAgents: [], hitlGateOpen: false }),
+  stop: () => {
+    if (hitlTimer !== null) { clearTimeout(hitlTimer); hitlTimer = null }
+    set({ isRunning: false, isPaused: false, activeAgents: [], hitlGateOpen: false })
+  },
   pause: () => set({ isPaused: true }),
   resume: () => set({ isPaused: false }),
 
@@ -217,4 +225,4 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
 
     set((s) => ({ activeAgents: s.activeAgents.filter((id) => id !== nodeId) }))
   },
-}))
+}}))
