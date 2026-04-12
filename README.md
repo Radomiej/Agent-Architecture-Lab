@@ -9,6 +9,7 @@
 <p align="center">
   <a href="https://radomiej.github.io/Agent-Architecture-Lab/"><img src="https://img.shields.io/badge/🌐_live_demo-GitHub_Pages-7C3AED.svg" alt="Live Demo"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
+  <a href="https://github.com/Radomiej/Agent-Architecture-Lab/actions/workflows/tests.yml"><img src="https://github.com/Radomiej/Agent-Architecture-Lab/actions/workflows/tests.yml/badge.svg" alt="E2E Tests"></a>
   <img src="https://img.shields.io/badge/version-v32.16-F59E0B.svg" alt="v32.16">
   <img src="https://img.shields.io/badge/agents-35-818CF8.svg" alt="35 Agents">
   <img src="https://img.shields.io/badge/presets-42-34D399.svg" alt="42 Presets">
@@ -154,7 +155,7 @@ Klucz API nigdy nie opuszcza przeglądarki — przechowywany wyłącznie w `loca
 | State | Zustand 5 (6 store'ów: canvas, simulation, llm, ui, cost, preset) |
 | Routing / i18n | react-i18next (PL/EN) |
 | LLM | CometAPI — OpenAI-compatible, streaming SSE |
-| Testy | Playwright E2E (25 testów) |
+| Testy | Playwright E2E (59 testów) |
 | CI/CD | GitHub Actions → build → GitHub Pages |
 | Style | Zero external UI deps — czyste CSS variables + inline styles |
 
