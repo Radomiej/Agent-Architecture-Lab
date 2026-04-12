@@ -99,7 +99,7 @@ export async function callAgent(opts: LLMCallOptions): Promise<LLMResult> {
           { role: 'user', content: userMessage },
         ],
         max_tokens: 512,
-        temperature: 0.7,
+        temperature: 0,
       }),
       signal,
     })

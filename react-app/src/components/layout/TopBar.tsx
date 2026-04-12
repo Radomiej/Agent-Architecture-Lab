@@ -10,7 +10,7 @@ import { cn } from '../../utils/cn'
 export const TopBar: React.FC = () => {
   const { t } = useTranslation()
   const { theme, toggleTheme, lang, toggleLang, openModal, setLeftDrawer, leftDrawerOpen } = useUiStore()
-  const { isRunning, start, stop, debugPanelOpen, toggleDebugPanel } = useSimulationStore()
+  const { isRunning, start, stop, debugPanelOpen, toggleDebugPanel, isPipelineRunning, stopPipeline } = useSimulationStore()
   const nodes = useCanvasStore((s) => s.nodes)
   const getCostSummary = useCostStore((s) => s.getCostSummary)
   const getContextSummary = useCostStore((s) => s.getContextSummary)
@@ -105,6 +105,25 @@ export const TopBar: React.FC = () => {
       <button onClick={() => openModal('settings')} title="LLM Settings (,)" className="btn-ghost-app" aria-label="LLM Settings">
         ⚙
       </button>
+
+      {/* Run Pipeline button — real LLM mode, only when configured */}
+      {debugMode && apiKey && (
+        <button
+          onClick={() => isPipelineRunning ? stopPipeline() : openModal('taskPrompt')}
+          aria-label={isPipelineRunning ? t('pipeline.stop', 'Stop Pipeline') : t('pipeline.run', 'Run Pipeline')}
+          title={isPipelineRunning ? 'Stop Pipeline' : 'Run Pipeline with real LLM (sequential, results passed forward)'}
+          className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold transition-colors border"
+          style={{
+            background: isPipelineRunning ? 'rgba(251,191,36,0.15)' : 'rgba(96,165,250,0.15)',
+            color: isPipelineRunning ? '#FBBF24' : '#60A5FA',
+            borderColor: isPipelineRunning ? 'rgba(251,191,36,0.35)' : 'rgba(96,165,250,0.35)',
+            cursor: 'pointer',
+          }}
+        >
+          <span>{isPipelineRunning ? '⏹' : '⚡'}</span>
+          <span className="hidden sm:inline">{isPipelineRunning ? t('pipeline.stop', 'Stop') : t('pipeline.run', 'Run')}</span>
+        </button>
+      )}
 
       {/* Sim toggle */}
       <button

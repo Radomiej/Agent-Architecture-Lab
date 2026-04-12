@@ -58,9 +58,21 @@ export const SimulationReviewModal: React.FC = () => {
 
 // ─── Timeline Tab ──────────────────────────────────────────────────────────────
 
+const TIMELINE_PREVIEW_LEN = 400
+
 const TimelineTab: React.FC = () => {
   const { t } = useTranslation()
   const messages = useSimulationStore((s) => s.messages)
+  const [expanded, setExpanded] = useState<Set<number>>(new Set())
+
+  const toggleExpanded = (idx: number) => {
+    setExpanded((prev) => {
+      const next = new Set(prev)
+      if (next.has(idx)) next.delete(idx)
+      else next.add(idx)
+      return next
+    })
+  }
 
   if (messages.length === 0) {
     return <EmptyState text={t('review.noMessages', 'No simulation messages yet. Run a simulation first.')} />
@@ -70,6 +82,9 @@ const TimelineTab: React.FC = () => {
     <div className="flex flex-col gap-1.5">
       {messages.map((msg, idx) => {
         const agent = AD_MAP.get(msg.agentId)
+        const isLong = msg.text.length > TIMELINE_PREVIEW_LEN
+        const isExp = expanded.has(idx)
+        const displayText = isLong && !isExp ? msg.text.slice(0, TIMELINE_PREVIEW_LEN) + '…' : msg.text
         return (
           <div
             key={`${msg.timestamp}-${idx}`}
@@ -82,7 +97,16 @@ const TimelineTab: React.FC = () => {
             <span className="font-semibold mr-1" style={{ color: 'var(--t1)' }}>
               {agent?.name ?? msg.agentId}:
             </span>
-            <span>{msg.text}</span>
+            <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{displayText}</span>
+            {isLong && (
+              <button
+                className="ml-2 text-[11px] font-semibold"
+                style={{ color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                onClick={() => toggleExpanded(idx)}
+              >
+                {isExp ? t('review.showLess', 'Show less ▲') : t('review.showMore', 'Show more ▼')}
+              </button>
+            )}
           </div>
         )
       })}
@@ -94,8 +118,14 @@ const TimelineTab: React.FC = () => {
 
 const FilesTab: React.FC = () => {
   const { t } = useTranslation()
-  const snapshot = useVfsStore((s) => s.getSnapshot())
+  // Subscribe to the stable Map reference (only replaced on actual VFS writes, not every render)
+  const vfsFiles = useVfsStore((s) => s.files)
   const [selectedPath, setSelectedPath] = useState<string | null>(null)
+
+  const snapshot = useMemo(
+    () => Array.from(vfsFiles.values()).sort((a, b) => a.path.localeCompare(b.path)),
+    [vfsFiles],
+  )
 
   const files = useMemo(() => snapshot.filter((f) => f.type === 'file'), [snapshot])
   const dirs = useMemo(() => snapshot.filter((f) => f.type === 'dir'), [snapshot])
@@ -304,9 +334,11 @@ const SummaryTab: React.FC = () => {
   const { t } = useTranslation()
   const messages = useSimulationStore((s) => s.messages)
   const toolCalls = useSimulationStore((s) => s.toolCalls)
-  const snapshot = useVfsStore((s) => s.getSnapshot())
+  // Subscribe to the stable Map reference to avoid infinite re-render loop
+  const vfsFiles = useVfsStore((s) => s.files)
 
   const stats = useMemo(() => {
+    const snapshot = Array.from(vfsFiles.values())
     const files = snapshot.filter((f) => f.type === 'file')
     const agentCreated = files.filter((f) => f.createdBy !== 'system')
     const errorCalls = toolCalls.filter((tc) => tc.status === 'error')
@@ -341,7 +373,7 @@ const SummaryTab: React.FC = () => {
       perAgent: [...perAgent.entries()].sort((a, b) => b[1].calls - a[1].calls),
       perTool: [...perTool.entries()].sort((a, b) => b[1] - a[1]),
     }
-  }, [messages, toolCalls, snapshot])
+  }, [messages, toolCalls, vfsFiles])
 
   return (
     <div className="flex flex-col gap-4">

@@ -10,6 +10,7 @@ import { CostModal } from './components/modals/CostModal'
 import { MermaidModal } from './components/modals/MermaidModal'
 import { LLMSettingsModal } from './components/modals/LLMSettingsModal'
 import { SimulationReviewModal } from './components/modals/SimulationReviewModal'
+import { TaskPromptModal } from './components/modals/TaskPromptModal'
 import { DebugPanel } from './components/debug/DebugPanel'
 import { MobileNav } from './components/layout/MobileNav'
 import { useUiStore } from './store/uiStore'
@@ -185,6 +186,7 @@ function AppLayout() {
       if (e.key === 'k' || e.key === 'K') { openModal('cost'); return }
       if (e.key === 'm' || e.key === 'M') { openModal('mermaid'); return }
       if (e.key === 'r' || e.key === 'R') { openModal('review'); return }
+      if (e.key === 'p' || e.key === 'P') { openModal('taskPrompt'); return }
       if (e.key === ',') { openModal('settings'); return }
       if (e.key === 'd' || e.key === 'D') { toggleDebugPanel(); return }
 
@@ -269,6 +271,7 @@ function AppLayout() {
       <MermaidModal />
       <LLMSettingsModal />
       <SimulationReviewModal />
+      <TaskPromptModal />
 
       {/* Debug panel */}
       <DebugPanel />
