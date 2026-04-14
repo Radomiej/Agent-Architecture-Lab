@@ -21,6 +21,7 @@ export function TaskPromptModal() {
   const { nodes, connections } = useCanvasStore()
 
   const [task, setTask] = useState('')
+  const [loops, setLoops] = useState<number>(1)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const isOpen = activeModal === 'taskPrompt'
@@ -29,6 +30,7 @@ export function TaskPromptModal() {
   useEffect(() => {
     if (isOpen) {
       setTask('')
+      setLoops(1)
       setTimeout(() => textareaRef.current?.focus(), 80)
     }
   }, [isOpen])
@@ -52,7 +54,7 @@ export function TaskPromptModal() {
   const handleRun = () => {
     if (!task.trim() || isPipelineRunning) return
     closeModal()
-    void runPipelineLLM(task.trim(), orderedNodes, connections)
+    void runPipelineLLM(task.trim(), orderedNodes, connections, { loops })
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -125,6 +127,25 @@ export function TaskPromptModal() {
           <p className="text-xs" style={{ color: 'var(--t4)' }}>
             {t('pipeline.ctrlEnter', 'Ctrl+Enter to run')} · {agentCount} {t('pipeline.agents', 'agents')} · {t('pipeline.sequential', 'sequential, results passed forward')}
           </p>
+
+          {/* Loop control */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs shrink-0" style={{ color: 'var(--t3)' }}>Loop:</span>
+            {([1, 2, 3, 5, -1] as const).map((v) => (
+              <button
+                key={v}
+                onClick={() => setLoops(v)}
+                className="px-2 py-0.5 rounded text-xs font-semibold transition-colors"
+                style={{
+                  background: loops === v ? 'rgba(167,139,250,0.2)' : 'var(--bg-input)',
+                  color: loops === v ? '#A78BFA' : 'var(--t3)',
+                  border: `1px solid ${loops === v ? 'rgba(167,139,250,0.4)' : 'var(--border)'}`,
+                }}
+              >
+                {v === -1 ? '∞' : v === 1 ? '1×' : `${v}×`}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Execution order preview */}

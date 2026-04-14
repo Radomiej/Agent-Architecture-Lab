@@ -4,12 +4,14 @@ import { ModalBase } from './ModalBase'
 import { useSimulationStore } from '../../store/simulationStore'
 import { useVfsStore } from '../../store/vfsStore'
 import { AD_MAP } from '../../data/agents'
+import type { LLMCallLog } from '../../types'
 
 
-type ReviewTab = 'timeline' | 'files' | 'tools' | 'summary'
+type ReviewTab = 'timeline' | 'files' | 'tools' | 'summary' | 'agents'
 
 const TAB_ICONS: Record<ReviewTab, string> = {
   timeline: '📜',
+  agents: '🤖',
   files: '📁',
   tools: '🔧',
   summary: '📊',
@@ -27,7 +29,7 @@ export const SimulationReviewModal: React.FC = () => {
         style={{ borderColor: 'var(--border)' }}
         role="tablist"
       >
-        {(['timeline', 'files', 'tools', 'summary'] as ReviewTab[]).map((id) => (
+        {(['timeline', 'agents', 'files', 'tools', 'summary'] as ReviewTab[]).map((id) => (
           <button
             key={id}
             role="tab"
@@ -48,6 +50,7 @@ export const SimulationReviewModal: React.FC = () => {
       {/* Tab content */}
       <div className="flex-1 overflow-y-auto p-4" style={{ minHeight: 300, maxHeight: '65vh' }}>
         {tab === 'timeline' && <TimelineTab />}
+        {tab === 'agents' && <AgentsTab />}
         {tab === 'files' && <FilesTab />}
         {tab === 'tools' && <ToolsTab />}
         {tab === 'summary' && <SummaryTab />}
@@ -110,6 +113,184 @@ const TimelineTab: React.FC = () => {
           </div>
         )
       })}
+    </div>
+  )
+}
+
+// ─── Agents Tab ────────────────────────────────────────────────────────────────
+
+const STATUS_COLORS: Record<string, string> = {
+  done: '#34D399',
+  error: '#F87171',
+  streaming: '#60A5FA',
+  pending: 'var(--t4)',
+}
+
+const SECTION_PREVIEW_LEN = 300
+
+const CollapsibleSection: React.FC<{ label: string; content: string; defaultOpen?: boolean; mono?: boolean }> = ({
+  label, content, defaultOpen = false, mono = false,
+}) => {
+  const [open, setOpen] = useState(defaultOpen)
+  return (
+    <div className="mb-2">
+      <button
+        className="flex items-center gap-1.5 w-full text-left text-[10px] font-bold uppercase tracking-wide py-0.5"
+        style={{ color: 'var(--t4)', background: 'none', border: 'none', cursor: 'pointer' }}
+        onClick={() => setOpen((v) => !v)}
+      >
+        <span style={{ fontSize: 8 }}>{open ? '▼' : '▶'}</span>
+        {label}
+        {!open && content.length > 0 && (
+          <span className="ml-2 font-normal normal-case" style={{ color: 'var(--t3)' }}>
+            {content.slice(0, 60).replace(/\n/g, ' ')}…
+          </span>
+        )}
+      </button>
+      {open && (
+        <pre
+          className="text-[11px] p-2.5 rounded-lg mt-1 overflow-auto"
+          style={{
+            background: 'var(--bg-panel)',
+            color: 'var(--t2)',
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word',
+            border: '1px solid var(--border)',
+            maxHeight: 320,
+            fontFamily: mono ? 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace' : 'inherit',
+            lineHeight: 1.55,
+          }}
+        >
+          {content || '(empty)'}
+        </pre>
+      )}
+    </div>
+  )
+}
+
+const AgentsTab: React.FC = () => {
+  const { t } = useTranslation()
+  const executionLog = useSimulationStore((s) => s.executionLog)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+
+  if (executionLog.length === 0) {
+    return <EmptyState text={t('review.noAgents', 'No LLM calls recorded. Run the real pipeline (⚡) first.')} />
+  }
+
+  const selected = selectedId
+    ? executionLog.find((e) => e.id === selectedId) ?? executionLog[0]
+    : executionLog[0]
+
+  const fmtMs = (ms?: number) => ms == null ? '' : ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`
+  const fmtTok = (log: LLMCallLog) => {
+    if (!log.usage) return ''
+    const { promptTokens, completionTokens } = log.usage
+    return `${promptTokens.toLocaleString()}→${completionTokens.toLocaleString()} tok`
+  }
+
+  return (
+    <div className="flex gap-3" style={{ minHeight: 360 }}>
+      {/* Agent list (left panel) */}
+      <div
+        className="w-52 shrink-0 flex flex-col gap-0.5 overflow-y-auto rounded-lg border p-1"
+        style={{ borderColor: 'var(--border)', background: 'var(--bg-input)', maxHeight: '62vh' }}
+      >
+        {executionLog.map((entry) => {
+          const isActive = (selectedId ?? executionLog[0]?.id) === entry.id
+          const statusColor = STATUS_COLORS[entry.status] ?? 'var(--t4)'
+          return (
+            <button
+              key={entry.id}
+              className="w-full text-left px-2.5 py-2 rounded-md text-[11px] transition-colors"
+              style={{
+                background: isActive ? 'rgba(99,102,241,0.1)' : 'transparent',
+                color: isActive ? 'var(--t1)' : 'var(--t2)',
+                border: isActive ? '1px solid rgba(99,102,241,0.25)' : '1px solid transparent',
+              }}
+              onClick={() => setSelectedId(entry.id)}
+            >
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <span style={{ color: statusColor, fontSize: 9 }}>●</span>
+                <span className="font-semibold truncate">{entry.agentName}</span>
+              </div>
+              <div className="flex gap-1.5 flex-wrap">
+                <span
+                  className="text-[9px] px-1 py-0.5 rounded"
+                  style={{ background: 'rgba(167,139,250,0.12)', color: '#A78BFA' }}
+                >
+                  {entry.model.split('/').pop()?.slice(0, 16) ?? entry.model}
+                </span>
+                {entry.latencyMs != null && (
+                  <span className="text-[9px]" style={{ color: 'var(--t4)' }}>{fmtMs(entry.latencyMs)}</span>
+                )}
+              </div>
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Detail panel (right) */}
+      {selected && (
+        <div className="flex-1 min-w-0 overflow-y-auto" style={{ maxHeight: '62vh' }}>
+          {/* Header */}
+          <div className="flex items-start justify-between gap-2 mb-3">
+            <div>
+              <h3 className="text-sm font-bold" style={{ color: 'var(--t1)' }}>{selected.agentName}</h3>
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                <span
+                  className="text-[10px] px-1.5 py-0.5 rounded font-semibold"
+                  style={{ background: 'rgba(167,139,250,0.12)', color: '#A78BFA' }}
+                >
+                  {selected.model}
+                </span>
+                <span
+                  className="text-[10px] px-1.5 py-0.5 rounded font-semibold"
+                  style={{
+                    background: `rgba(${selected.status === 'done' ? '52,211,153' : selected.status === 'error' ? '248,113,113' : '96,165,250'},0.12)`,
+                    color: STATUS_COLORS[selected.status] ?? 'var(--t4)',
+                  }}
+                >
+                  {selected.status}
+                </span>
+                {selected.latencyMs != null && (
+                  <span className="text-[10px]" style={{ color: 'var(--t4)' }}>⏱ {fmtMs(selected.latencyMs)}</span>
+                )}
+                {fmtTok(selected) && (
+                  <span className="text-[10px]" style={{ color: 'var(--t4)' }}>🔢 {fmtTok(selected)}</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {selected.status === 'error' && selected.error && (
+            <div
+              className="mb-3 px-3 py-2 rounded-lg text-[12px]"
+              style={{ background: 'rgba(248,113,113,0.1)', color: '#F87171', border: '1px solid rgba(248,113,113,0.25)' }}
+            >
+              ❌ {selected.error}
+            </div>
+          )}
+
+          {/* Sections */}
+          <CollapsibleSection
+            label={t('review.systemPrompt', 'System Prompt')}
+            content={selected.systemPrompt}
+            defaultOpen={false}
+            mono
+          />
+          <CollapsibleSection
+            label={t('review.userMessage', 'User Message / Context')}
+            content={selected.userMessage}
+            defaultOpen={false}
+            mono
+          />
+          <CollapsibleSection
+            label={t('review.response', 'Agent Response')}
+            content={selected.responseText || '(no response yet)'}
+            defaultOpen
+          />
+        </div>
+      )}
     </div>
   )
 }

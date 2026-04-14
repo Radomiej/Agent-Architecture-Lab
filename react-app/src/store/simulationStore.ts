@@ -21,6 +21,10 @@ interface SimulationStore {
   agentResults: Record<string, string>
   /** Whether a real LLM pipeline is currently executing */
   isPipelineRunning: boolean
+  /** Current loop iteration (1-based) during a looped pipeline run */
+  loopCount: number
+  /** Maximum loops (1 = single run, -1 = infinite) */
+  loopMax: number
   /** AbortController for cancelling in-flight pipeline calls */
   _pipelineAbort: AbortController | null
   start: () => void
@@ -49,7 +53,7 @@ interface SimulationStore {
     userTask: string,
     simulationOrder: CanvasNode[],
     connections: Connection[],
-    presetName?: string,
+    opts?: { presetName?: string; loops?: number },
   ) => Promise<void>
   /** Abort an in-flight pipeline run. */
   stopPipeline: () => void
@@ -69,6 +73,8 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
   debugPanelOpen: false,
   agentResults: {},
   isPipelineRunning: false,
+  loopCount: 0,
+  loopMax: 1,
   _pipelineAbort: null,
 
   start: () => set({ isRunning: true, isPaused: false, step: 0, messages: [], completedPhases: [], toolCalls: [], phase: 'strategy' }),
@@ -111,6 +117,8 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
       toolCalls: [],
       agentResults: {},
       isPipelineRunning: false,
+      loopCount: 0,
+      loopMax: 1,
       _pipelineAbort: null,
     }),
 
@@ -217,7 +225,7 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
   stopPipeline: () => {
     const { _pipelineAbort } = get()
     _pipelineAbort?.abort()
-    set({ isPipelineRunning: false, _pipelineAbort: null, activeAgents: [] })
+    set({ isPipelineRunning: false, _pipelineAbort: null, activeAgents: [], loopCount: 0, loopMax: 1 })
     get().addMessage({
       agentId: 'orchestrator',
       text: '⛔ Pipeline stopped by user.',
@@ -226,10 +234,13 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
     })
   },
 
-  runPipelineLLM: async (userTask, simulationOrder, connections, presetName) => {
+  runPipelineLLM: async (userTask, simulationOrder, connections, opts) => {
     const llm = useLLMStore.getState()
     if (!llm.apiKey) return
     if (simulationOrder.length === 0) return
+
+    const presetName = opts?.presetName
+    const loops = opts?.loops ?? 1  // 1 = single run, -1 = infinite
 
     const abort = new AbortController()
     set({
@@ -240,132 +251,148 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
       messages: [],
       completedPhases: [],
       activeAgents: [],
+      loopCount: 0,
+      loopMax: loops,
     })
 
     const canvas = useCanvasStore.getState()
     const { _updateLog, addMessage } = get()
 
-    addMessage({
-      agentId: 'orchestrator',
-      text: `▶ Starting pipeline${presetName ? ` "${presetName}"` : ''} — ${simulationOrder.length} agents`,
-      timestamp: Date.now(),
-      phase: 'strategy',
-    })
-
     // Detect if the pipeline has an orchestrator node as first agent
     const firstAgent = AD_MAP.get(simulationOrder[0]?.agentId ?? '')
     const hasOrchestrator = firstAgent?.id === 'orchestrator'
 
-    // Accumulate results as we go: nodeId → response text
-    const accumulated: Record<string, string> = {}
+    let currentLoop = 0
+    // prevLoopResults: carry last loop's output into next loop's context
+    let prevLoopResults: Record<string, string> = {}
 
-    for (const node of simulationOrder) {
-      // Check abort
+    while (!abort.signal.aborted) {
+      currentLoop++
+      set({ loopCount: currentLoop })
+
+      const loopLabel = loops === 1
+        ? `▶ Starting pipeline${presetName ? ` "${presetName}"` : ''} — ${simulationOrder.length} agents`
+        : loops === -1
+          ? `🔁 Loop ${currentLoop} (∞) — ${simulationOrder.length} agents`
+          : `🔁 Loop ${currentLoop}/${loops} — ${simulationOrder.length} agents`
+
+      addMessage({ agentId: 'orchestrator', text: loopLabel, timestamp: Date.now(), phase: 'strategy' })
+
+      // Accumulate results within this loop iteration
+      const accumulated: Record<string, string> = {}
+
+      for (const node of simulationOrder) {
+        if (abort.signal.aborted) break
+
+        const agentDef = AD_MAP.get(node.agentId)
+        if (!agentDef) continue
+
+        set((s) => ({ activeAgents: [...s.activeAgents.filter((id) => id !== node.id), node.id] }))
+
+        // Build upstream results: direct connections within this loop
+        const upstreamNodeIds = connections
+          .filter((c) => c.to === node.id)
+          .map((c) => c.from)
+
+        const upstreamResults: Record<string, string> = {}
+        for (const upId of upstreamNodeIds) {
+          // Prefer current-loop result; fall back to previous loop's result (for circular/loop presets)
+          if (accumulated[upId]) upstreamResults[upId] = accumulated[upId]
+          else if (prevLoopResults[upId]) upstreamResults[upId] = prevLoopResults[upId]
+        }
+
+        if (!hasOrchestrator || agentDef.id === 'orchestrator') {
+          // no-op: use direct connections only
+        } else if (upstreamNodeIds.length === 0 && simulationOrder[0]) {
+          accumulated[simulationOrder[0].id]
+            && (upstreamResults[simulationOrder[0].id] = accumulated[simulationOrder[0].id])
+        }
+
+        const userMessage = buildAgentContext({
+          currentNode: node,
+          allNodes: canvas.nodes,
+          connections,
+          agentMap: AD_MAP,
+          presetName,
+          phase: agentDef.phase,
+          userTask,
+          upstreamResults: Object.keys(upstreamResults).length > 0 ? upstreamResults : undefined,
+        })
+
+        const logId = `pipeline-${node.id}-loop${currentLoop}-${Date.now()}`
+        const logEntry: LLMCallLog = {
+          id: logId,
+          agentId: agentDef.id,
+          agentName: agentDef.name,
+          model: llm.modelMap[agentDef.model] ?? agentDef.model,
+          status: 'pending' as LLMCallStatus,
+          systemPrompt: agentDef.prompt,
+          userMessage,
+          responseText: '',
+          startedAt: Date.now(),
+        }
+        set((s) => ({ executionLog: [...s.executionLog, logEntry] }))
+        addMessage({ agentId: agentDef.id, text: `⏳ ${agentDef.name}…`, timestamp: Date.now(), phase: agentDef.phase })
+        _updateLog(logId, { status: 'streaming' })
+
+        let streamedText = ''
+        const result = await callAgent({
+          agentId: agentDef.id,
+          systemPrompt: agentDef.prompt,
+          userMessage,
+          model: agentDef.model,
+          apiKey: llm.apiKey,
+          baseUrl: llm.baseUrl,
+          modelMap: llm.modelMap,
+          signal: abort.signal,
+          onChunk: (chunk) => {
+            streamedText += chunk
+            _updateLog(logId, { responseText: streamedText, status: 'streaming' })
+            set((s) => {
+              const msgs = [...s.messages]
+              const last = msgs[msgs.length - 1]
+              if (last && last.agentId === agentDef.id) {
+                msgs[msgs.length - 1] = { ...last, text: streamedText.slice(0, 200) }
+              }
+              return { messages: msgs }
+            })
+          },
+        })
+
+        set((s) => ({ activeAgents: s.activeAgents.filter((id) => id !== node.id) }))
+
+        if (abort.signal.aborted) break
+
+        if (result.ok) {
+          accumulated[node.id] = result.text
+          set((s) => ({ agentResults: { ...s.agentResults, [node.id]: result.text } }))
+          _updateLog(logId, { status: 'done', responseText: result.text, usage: result.usage, latencyMs: result.latencyMs })
+          addMessage({ agentId: agentDef.id, text: result.text, timestamp: Date.now(), phase: agentDef.phase })
+          get().completePhase(agentDef.phase)
+        } else {
+          _updateLog(logId, { status: 'error', error: result.error, latencyMs: result.latencyMs })
+          addMessage({ agentId: agentDef.id, text: `❌ ${agentDef.name}: ${result.error ?? 'Unknown error'}`, timestamp: Date.now(), phase: agentDef.phase })
+        }
+      }
+
       if (abort.signal.aborted) break
 
-      const agentDef = AD_MAP.get(node.agentId)
-      if (!agentDef) continue
+      // Carry this loop's results into the next iteration
+      prevLoopResults = { ...accumulated }
 
-      set((s) => ({ activeAgents: [...s.activeAgents.filter((id) => id !== node.id), node.id] }))
-
-      // Build upstream results: all nodes that connect TO this node
-      const upstreamNodeIds = connections
-        .filter((c) => c.to === node.id)
-        .map((c) => c.from)
-
-      // Collect upstream results from accumulated map
-      const upstreamResults: Record<string, string> = {}
-      for (const upId of upstreamNodeIds) {
-        if (accumulated[upId]) upstreamResults[upId] = accumulated[upId]
-      }
-
-      // If this is not the orchestrator and no direct upstream but orchestrator ran,
-      // include orchestrator's output as general context
-      if (!hasOrchestrator || agentDef.id === 'orchestrator') {
-        // orchestrator or no orchestrator: just use direct connections
-      } else if (upstreamNodeIds.length === 0 && simulationOrder[0]) {
-        // No direct upstream connection — inject orchestrator output as context
-        accumulated[simulationOrder[0].id]
-          && (upstreamResults[simulationOrder[0].id] = accumulated[simulationOrder[0].id])
-      }
-
-      const userMessage = buildAgentContext({
-        currentNode: node,
-        allNodes: canvas.nodes,
-        connections,
-        agentMap: AD_MAP,
-        presetName,
-        phase: agentDef.phase,
-        userTask,
-        upstreamResults: Object.keys(upstreamResults).length > 0 ? upstreamResults : undefined,
-      })
-
-      const logId = `pipeline-${node.id}-${Date.now()}`
-      const logEntry: LLMCallLog = {
-        id: logId,
-        agentId: agentDef.id,
-        agentName: agentDef.name,
-        model: llm.modelMap[agentDef.model] ?? agentDef.model,
-        status: 'pending' as LLMCallStatus,
-        systemPrompt: agentDef.prompt,
-        userMessage,
-        responseText: '',
-        startedAt: Date.now(),
-      }
-      set((s) => ({ executionLog: [...s.executionLog, logEntry] }))
-      addMessage({ agentId: agentDef.id, text: `⏳ ${agentDef.name}…`, timestamp: Date.now(), phase: agentDef.phase })
-      _updateLog(logId, { status: 'streaming' })
-
-      let streamedText = ''
-      const result = await callAgent({
-        agentId: agentDef.id,
-        systemPrompt: agentDef.prompt,
-        userMessage,
-        model: agentDef.model,
-        apiKey: llm.apiKey,
-        baseUrl: llm.baseUrl,
-        modelMap: llm.modelMap,
-        signal: abort.signal,
-        onChunk: (chunk) => {
-          streamedText += chunk
-          _updateLog(logId, { responseText: streamedText, status: 'streaming' })
-          set((s) => {
-            const msgs = [...s.messages]
-            const last = msgs[msgs.length - 1]
-            if (last && last.agentId === agentDef.id) {
-              msgs[msgs.length - 1] = { ...last, text: streamedText.slice(0, 200) }
-            }
-            return { messages: msgs }
-          })
-        },
-      })
-
-      set((s) => ({ activeAgents: s.activeAgents.filter((id) => id !== node.id) }))
-
-      if (abort.signal.aborted) break
-
-      if (result.ok) {
-        accumulated[node.id] = result.text
-        set((s) => ({ agentResults: { ...s.agentResults, [node.id]: result.text } }))
-        _updateLog(logId, { status: 'done', responseText: result.text, usage: result.usage, latencyMs: result.latencyMs })
-        addMessage({ agentId: agentDef.id, text: result.text, timestamp: Date.now(), phase: agentDef.phase })
-        get().completePhase(agentDef.phase)
-      } else {
-        _updateLog(logId, { status: 'error', error: result.error, latencyMs: result.latencyMs })
-        addMessage({ agentId: agentDef.id, text: `❌ ${agentDef.name}: ${result.error ?? 'Unknown error'}`, timestamp: Date.now(), phase: agentDef.phase })
-        // Continue pipeline despite single-agent error
-      }
-    }
-
-    if (!abort.signal.aborted) {
       addMessage({
         agentId: 'orchestrator',
-        text: `✅ Pipeline complete — ${Object.keys(accumulated).length}/${simulationOrder.length} agents finished.`,
+        text: loops === 1
+          ? `✅ Pipeline complete — ${Object.keys(accumulated).length}/${simulationOrder.length} agents finished.`
+          : `✅ Loop ${currentLoop}${loops === -1 ? ' (∞)' : `/${loops}`} done — ${Object.keys(accumulated).length}/${simulationOrder.length} agents.`,
         timestamp: Date.now(),
         phase: 'strategy',
       })
+
+      // Stop if finite loops exhausted
+      if (loops !== -1 && currentLoop >= loops) break
     }
 
-    set({ isPipelineRunning: false, _pipelineAbort: null, activeAgents: [] })
+    set({ isPipelineRunning: false, _pipelineAbort: null, activeAgents: [], loopCount: 0, loopMax: 1 })
   },
 }))

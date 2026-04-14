@@ -11,8 +11,9 @@ import { getAgentColor, getPresetColor } from '../../data/agentColors'
 import { useSimulationStore } from '../../store/simulationStore'
 
 export const RightSidebar: React.FC = () => {
-  const { selectedAgentId, selectedPresetId, theme } = useUiStore()
-  const { messages, isRunning, phase } = useSimulationStore()
+  const { selectedAgentId, selectedPresetId, theme, openModal } = useUiStore()
+  const { messages, isRunning, phase, isPipelineRunning, loopCount, loopMax, stopPipeline } = useSimulationStore()
+  const openReview = () => openModal('review')
 
   if (!selectedAgentId && !selectedPresetId) {
     return (
@@ -21,7 +22,7 @@ export const RightSidebar: React.FC = () => {
         aria-label="Right sidebar"
       >
         <EmptyState />
-        <SimulationTimeline messages={messages} isRunning={isRunning} phase={phase} />
+        <SimulationTimeline messages={messages} isRunning={isRunning} phase={phase} isPipelineRunning={isPipelineRunning} loopCount={loopCount} loopMax={loopMax} stopPipeline={stopPipeline} openReview={openReview} />
       </aside>
     )
   }
@@ -30,7 +31,7 @@ export const RightSidebar: React.FC = () => {
     <aside className="flex flex-col h-full overflow-hidden w-full" aria-label="Agent/preset details">
       {selectedAgentId && <AgentDetail id={selectedAgentId} theme={theme} />}
       {selectedPresetId && <PresetDetail id={selectedPresetId} />}
-      <SimulationTimeline messages={messages} isRunning={isRunning} phase={phase} />
+      <SimulationTimeline messages={messages} isRunning={isRunning} phase={phase} isPipelineRunning={isPipelineRunning} loopCount={loopCount} loopMax={loopMax} stopPipeline={stopPipeline} openReview={openReview} />
     </aside>
   )
 }
@@ -259,45 +260,116 @@ function hexToRgb(hex: string): string {
   return `${r},${g},${b}`
 }
 
-const SimulationTimeline: React.FC<{ messages: Array<{ agentId: string; text: string; timestamp: number; phase?: string }>; isRunning: boolean; phase: string }> = ({ messages, isRunning, phase }) => {
+const SimulationTimeline: React.FC<{
+  messages: Array<{ agentId: string; text: string; timestamp: number; phase?: string }>
+  isRunning: boolean
+  phase: string
+  isPipelineRunning: boolean
+  loopCount: number
+  loopMax: number
+  stopPipeline: () => void
+  openReview: () => void
+}> = ({ messages, isRunning, phase, isPipelineRunning, loopCount, loopMax, stopPipeline, openReview }) => {
   const { t } = useTranslation()
-  if (!isRunning && messages.length === 0) return null
+  if (!isRunning && !isPipelineRunning && messages.length === 0) return null
 
   const recent = [...messages].slice(-10).reverse()
 
+  const loopLabel = isPipelineRunning && loopMax !== 1
+    ? loopMax === -1
+      ? `Loop ${loopCount} (∞)`
+      : `Loop ${loopCount}/${loopMax}`
+    : null
+
+  // Show review button when pipeline has run (has messages) and is now idle
+  const showReviewBtn = !isPipelineRunning && !isRunning && messages.length > 0
+
   return (
     <section
-      className="shrink-0 border-t px-3 py-2"
+      className="shrink-0 border-t"
       style={{ borderColor: 'var(--border)', background: 'var(--bg-input)' }}
       aria-label="Dialog Timeline"
     >
-      <div className="flex items-center justify-between mb-1.5">
-        <span className="text-[10px] font-bold uppercase tracking-[0.06em]" style={{ color: 'var(--t4)' }}>
-          Dialog Timeline
-        </span>
-        <span className="text-[10px]" style={{ color: isRunning ? '#34D399' : 'var(--t4)' }}>
-          {isRunning ? `LIVE · ${phase}` : 'IDLE'}
-        </span>
-      </div>
-
-      <div className="max-h-40 overflow-y-auto flex flex-col gap-1 pr-1">
-        {recent.length === 0 && (
-          <div className="text-[11px]" style={{ color: 'var(--t4)' }}>
-            {t('sidebar.noMessages', 'No simulation messages.')}
+      {/* Pipeline running banner with stop control */}
+      {isPipelineRunning && (
+        <div
+          className="flex items-center justify-between px-3 py-2 border-b"
+          style={{ borderColor: 'rgba(251,191,36,0.25)', background: 'rgba(251,191,36,0.07)' }}
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] animate-pulse" style={{ color: '#FBBF24' }}>●</span>
+            <span className="text-[11px] font-semibold" style={{ color: '#FBBF24' }}>
+              {loopLabel ? loopLabel : t('pipeline.running', 'Pipeline running…')}
+            </span>
           </div>
-        )}
+          <button
+            onClick={stopPipeline}
+            aria-label={t('pipeline.stop', 'Stop Pipeline')}
+            className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold transition-opacity hover:opacity-80"
+            style={{
+              background: 'rgba(248,113,113,0.15)',
+              color: '#F87171',
+              border: '1px solid rgba(248,113,113,0.3)',
+            }}
+          >
+            ⏹ {t('pipeline.stop', 'Stop')}
+          </button>
+        </div>
+      )}
 
-        {recent.map((msg, idx) => {
-          const agent = AD_MAP.get(msg.agentId)
-          const phaseLabel = msg.phase ? `[${msg.phase}] ` : ''
-          return (
-            <div key={`${msg.timestamp}-${idx}`} className="text-[11px] leading-snug" style={{ color: 'var(--t2)' }}>
-              <span style={{ color: 'var(--t4)' }}>{phaseLabel}</span>
-              <span className="font-semibold" style={{ color: 'var(--t1)' }}>{agent?.name ?? msg.agentId}</span>
-              <span>: {msg.text}</span>
+      {/* Review results button after pipeline completes */}
+      {showReviewBtn && (
+        <div
+          className="flex items-center justify-between px-3 py-2 border-b"
+          style={{ borderColor: 'rgba(52,211,153,0.2)', background: 'rgba(52,211,153,0.06)' }}
+        >
+          <span className="text-[11px] font-semibold" style={{ color: '#34D399' }}>
+            ✅ {t('pipeline.done', 'Pipeline done')}
+          </span>
+          <button
+            onClick={openReview}
+            aria-label="Open Simulation Review"
+            className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold transition-opacity hover:opacity-80"
+            style={{
+              background: 'rgba(99,102,241,0.15)',
+              color: '#818CF8',
+              border: '1px solid rgba(99,102,241,0.3)',
+            }}
+          >
+            📊 {t('review.openBtn', 'Review')}
+          </button>
+        </div>
+      )}
+
+      <div className="px-3 py-2">
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="text-[10px] font-bold uppercase tracking-[0.06em]" style={{ color: 'var(--t4)' }}>
+            Dialog Timeline
+          </span>
+          <span className="text-[10px]" style={{ color: isRunning ? '#34D399' : 'var(--t4)' }}>
+            {isRunning ? `LIVE · ${phase}` : 'IDLE'}
+          </span>
+        </div>
+
+        <div className="max-h-40 overflow-y-auto flex flex-col gap-1 pr-1">
+          {recent.length === 0 && (
+            <div className="text-[11px]" style={{ color: 'var(--t4)' }}>
+              {t('sidebar.noMessages', 'No simulation messages.')}
             </div>
-          )
-        })}
+          )}
+
+          {recent.map((msg, idx) => {
+            const agent = AD_MAP.get(msg.agentId)
+            const phaseLabel = msg.phase ? `[${msg.phase}] ` : ''
+            return (
+              <div key={`${msg.timestamp}-${idx}`} className="text-[11px] leading-snug" style={{ color: 'var(--t2)' }}>
+                <span style={{ color: 'var(--t4)' }}>{phaseLabel}</span>
+                <span className="font-semibold" style={{ color: 'var(--t1)' }}>{agent?.name ?? msg.agentId}</span>
+                <span>: {msg.text}</span>
+              </div>
+            )
+          })}
+        </div>
       </div>
     </section>
   )

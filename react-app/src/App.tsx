@@ -44,10 +44,20 @@ function AppLayout() {
     addToolCalls,
     stop,
     messages,
+    isPipelineRunning,
   } = useSimulationStore()
   const [toasts, setToasts] = useState<Array<{ id: string; message: string; type?: 'info' | 'success' | 'warn' | 'error' }>>([])
   const msgCursorRef = useRef(0)
   const vfsSeededRef = useRef(false)
+  const prevPipelineRunningRef = useRef(false)
+
+  // Auto-open review modal when real pipeline finishes
+  useEffect(() => {
+    if (prevPipelineRunningRef.current && !isPipelineRunning) {
+      openModal('review')
+    }
+    prevPipelineRunningRef.current = isPipelineRunning
+  }, [isPipelineRunning, openModal])
 
   const simulationOrder = useMemo(() => {
     const phaseRank: Record<string, number> = {

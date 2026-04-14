@@ -140,6 +140,8 @@ react-app/
 
 ## Running the Project
 
+Always start any local app server from the `react-app/` directory, never from repository root.
+
 ```bash
 # Development
 cd react-app && npm install && npm run dev   # → http://localhost:5173
@@ -183,4 +185,4 @@ CI runs `npm run build` + `npm run test:e2e` on every PR and push to `master`.
 
 ---
 
-*Maintained by: Radomiej · Last updated: 2026-04-12*
+*Maintained by: Radomiej · Last updated: 2026-04-13*
