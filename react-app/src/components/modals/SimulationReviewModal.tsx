@@ -126,8 +126,6 @@ const STATUS_COLORS: Record<string, string> = {
   pending: 'var(--t4)',
 }
 
-const SECTION_PREVIEW_LEN = 300
-
 const CollapsibleSection: React.FC<{ label: string; content: string; defaultOpen?: boolean; mono?: boolean }> = ({
   label, content, defaultOpen = false, mono = false,
 }) => {

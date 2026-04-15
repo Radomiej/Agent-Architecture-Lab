@@ -4,7 +4,6 @@
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { CanvasNode } from '../types'
-import type { PresetDef } from '../data/presets'
 
 // ─── localStorage mock ────────────────────────────────────────────────────────
 
@@ -40,17 +39,6 @@ async function freshCanvasStore() {
 
 function makeNode(id: string, agentId = 'orchestrator', x = 0, y = 0): CanvasNode {
   return { id, agentId, x, y, connections: [] }
-}
-
-const MINI_PRESET: PresetDef = {
-  id: 'mini',
-  name: 'Mini',
-  cat: 'TEST',
-  desc: 'test preset',
-  nodes: [
-    { id: 'orchestrator', x: 100, y: 100, c: [1] },
-    { id: 'backend',      x: 200, y: 200 },
-  ],
 }
 
 // ─── reset between tests ──────────────────────────────────────────────────────
@@ -164,15 +152,24 @@ describe('canvasStore persistence – clearCanvas', () => {
   })
 })
 
-// ─── loadPreset ───────────────────────────────────────────────────────────────
+// ─── replaceGraph ─────────────────────────────────────────────────────────────
 
-describe('canvasStore persistence – loadPreset', () => {
-  it('persists nodes and connections after loadPreset', async () => {
+describe('canvasStore persistence – replaceGraph', () => {
+  it('persists graph replacement atomically', async () => {
     const useStore = await freshCanvasStore()
-    useStore.getState().loadPreset(MINI_PRESET)
+    const nodes = [
+      makeNode('n1', 'orchestrator', 100, 100),
+      makeNode('n2', 'backend', 200, 200),
+    ]
+    const connections = [{ from: 'n1', to: 'n2' }]
+
+    useStore.getState().replaceGraph(nodes, connections)
     const saved = readCanvas()
+
     expect(saved?.nodes).toHaveLength(2)
-    expect(saved?.connections).toHaveLength(1)
+    expect(saved?.connections).toEqual(connections)
+    expect(saved?.zoom).toBe(1)
+    expect(saved?.pan).toEqual({ x: 0, y: 0 })
   })
 })
 

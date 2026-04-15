@@ -37,7 +37,10 @@ describe('real gaps (intentional red tests)', () => {
     const p1 = useSimulationStore.getState().runPipelineLLM('task', canvasState.nodes, [])
     const p2 = useSimulationStore.getState().runPipelineLLM('task', canvasState.nodes, [])
 
-    resolveFirst?.()
+    const firstResolver = resolveFirst as (() => void) | null
+    if (firstResolver) {
+      firstResolver()
+    }
     await Promise.all([p1, p2])
 
     // Desired behavior: second pipeline start should be ignored while one is active.

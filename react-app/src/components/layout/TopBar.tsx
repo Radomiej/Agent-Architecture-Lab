@@ -1,23 +1,48 @@
-import React from 'react'
+import React, { useState, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useUiStore } from '../../store/uiStore'
 import { useSimulationStore } from '../../store/simulationStore'
 import { useCanvasStore } from '../../store/canvasStore'
 import { useCostStore } from '../../store/costStore'
 import { useLLMStore } from '../../store/llmStore'
+import { useScenarioStore } from '../../store/scenarioStore'
 import { cn } from '../../utils/cn'
 
 export const TopBar: React.FC = () => {
   const { t } = useTranslation()
-  const { theme, toggleTheme, lang, toggleLang, openModal, setLeftDrawer, leftDrawerOpen } = useUiStore()
+  const { theme, toggleTheme, lang, toggleLang, openModal, setLeftDrawer, leftDrawerOpen, setSidebarTab } = useUiStore()
   const { isRunning, start, stop, debugPanelOpen, toggleDebugPanel, isPipelineRunning, stopPipeline } = useSimulationStore()
   const nodes = useCanvasStore((s) => s.nodes)
   const getCostSummary = useCostStore((s) => s.getCostSummary)
   const getContextSummary = useCostStore((s) => s.getContextSummary)
   const { debugMode, apiKey } = useLLMStore()
+  const { saveScenario } = useScenarioStore()
+
+  const [saving, setSaving] = useState(false)
+  const [saveName, setSaveName] = useState('')
+  const saveInputRef = useRef<HTMLInputElement>(null)
 
   const cost = getCostSummary(nodes)
   const ctx = getContextSummary(nodes)
+
+  const handleSaveOpen = () => {
+    setSaving(true)
+    setTimeout(() => saveInputRef.current?.focus(), 30)
+  }
+
+  const handleSaveConfirm = () => {
+    const name = saveName.trim()
+    if (!name) return
+    saveScenario(name)
+    setSaving(false)
+    setSaveName('')
+    setSidebarTab('saved')
+  }
+
+  const handleSaveCancel = () => {
+    setSaving(false)
+    setSaveName('')
+  }
 
   const sevColor = (sev: string) => {
     if (sev === 'safe') return '#34D399'
@@ -100,6 +125,59 @@ export const TopBar: React.FC = () => {
       <button onClick={() => openModal('mermaid')} title="Export Mermaid" className="btn-ghost-app" aria-label="Export Mermaid diagram">
         ⬡
       </button>
+
+      {/* Save configuration */}
+      {saving ? (
+        <div className="flex items-center gap-1 shrink-0">
+          <input
+            ref={saveInputRef}
+            type="text"
+            value={saveName}
+            onChange={(e) => setSaveName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleSaveConfirm()
+              if (e.key === 'Escape') handleSaveCancel()
+            }}
+            placeholder="Config name..."
+            aria-label={`${t('sidebar.saveConfig', 'Save configuration')} - name`}
+            className="rounded px-2 text-xs outline-none"
+            style={{
+              width: 130,
+              height: 28,
+              background: 'var(--bg-input)',
+              border: '1px solid var(--border)',
+              color: 'var(--t1)',
+            }}
+          />
+          <button
+            onClick={handleSaveConfirm}
+            disabled={!saveName.trim()}
+            className="btn-ghost-app"
+            aria-label={t('sidebar.saveConfirm', 'Confirm save')}
+            style={{ color: '#34D399' }}
+          >
+            ✓
+          </button>
+          <button
+            onClick={handleSaveCancel}
+            className="btn-ghost-app"
+            aria-label={t('sidebar.saveCancel', 'Cancel')}
+          >
+            ✕
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={handleSaveOpen}
+          disabled={nodes.length === 0}
+          title={t('sidebar.saveConfig', 'Save configuration')}
+          className="btn-ghost-app"
+          aria-label={t('sidebar.saveConfig', 'Save configuration')}
+          style={{ opacity: nodes.length === 0 ? 0.4 : 1 }}
+        >
+          💾
+        </button>
+      )}
 
       {/* Settings */}
       <button onClick={() => openModal('settings')} title="LLM Settings (,)" className="btn-ghost-app" aria-label="LLM Settings">

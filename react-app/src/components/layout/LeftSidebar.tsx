@@ -2,18 +2,18 @@ import React, { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useUiStore } from '../../store/uiStore'
 import { usePresetStore } from '../../store/presetStore'
-import { useCanvasStore } from '../../store/canvasStore'
+import { useScenarioStore } from '../../store/scenarioStore'
 import { AD, AD_MAP, PCAT, PHASES } from '../../data/agents'
 import { PRESET_MAP } from '../../data/presets'
 import { AgentIcon } from '../primitives/AgentIcon'
-import { PhaseChip } from '../primitives/PhaseChip'
 import { getAgentColor, getPresetColor } from '../../data/agentColors'
+import type { SavedConfig } from '../../types'
 
 export const LeftSidebar: React.FC = () => {
   const { t } = useTranslation()
   const { sidebarTab, setSidebarTab, agentPaletteSearch, setSearch, selectAgent, selectPreset, theme } = useUiStore()
   const { customAgents, savedConfigs } = usePresetStore()
-  const loadPreset = useCanvasStore((s) => s.loadPreset)
+  const { loadPresetScenario } = useScenarioStore()
 
   const allAgents = useMemo(() => [...AD, ...customAgents], [customAgents])
 
@@ -81,7 +81,7 @@ export const LeftSidebar: React.FC = () => {
           <AgentList groups={groupedAgents} onSelect={selectAgent} theme={theme} />
         )}
         {sidebarTab === 'presets' && (
-          <PresetList onSelect={(id) => { selectPreset(id); const p = PRESET_MAP.get(id); if (p) loadPreset(p) }} theme={theme} search={agentPaletteSearch} />
+          <PresetList onSelect={(id) => { selectPreset(id); const p = PRESET_MAP.get(id); if (p) loadPresetScenario(p) }} theme={theme} search={agentPaletteSearch} />
         )}
         {sidebarTab === 'saved' && (
           <SavedList configs={savedConfigs} />
@@ -264,8 +264,10 @@ const PresetList: React.FC<{
   )
 }
 
-const SavedList: React.FC<{ configs: { name: string; data: unknown }[] }> = ({ configs }) => {
+const SavedList: React.FC<{ configs: SavedConfig[] }> = ({ configs }) => {
   const { t } = useTranslation()
+  const { restoreScenario, deleteScenario } = useScenarioStore()
+
   if (configs.length === 0) {
     return (
       <div className="px-4 py-6 text-center text-xs" style={{ color: 'var(--t3)' }}>
@@ -273,17 +275,48 @@ const SavedList: React.FC<{ configs: { name: string; data: unknown }[] }> = ({ c
       </div>
     )
   }
+
   return (
     <>
       {configs.map((cfg) => (
         <div
           key={cfg.name}
-          className="flex items-center gap-2 px-3 py-2"
+          role="button"
+          tabIndex={0}
+          onClick={() => restoreScenario(cfg.name)}
+          onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && restoreScenario(cfg.name)}
+          className="group flex items-center gap-2 px-3 py-2 cursor-pointer transition-colors hover:bg-[var(--state-hover)] focus-visible:outline-none focus-visible:bg-[var(--state-focus)]"
+          aria-label={t('sidebar.loadConfig', 'Load {{name}}', { name: cfg.name })}
         >
-          <span className="text-xs flex-1 truncate" style={{ color: 'var(--t1)' }}>
-            {cfg.name}
-          </span>
-          <PhaseChip phase="strategy" small />
+          {/* Icon */}
+          <div
+            className="flex items-center justify-center shrink-0 rounded-lg"
+            style={{ width: 30, height: 30, background: 'rgba(167,139,250,0.12)', border: '1px solid rgba(167,139,250,0.25)' }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#A78BFA" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="2" y="3" width="20" height="14" rx="2"/>
+              <path d="M8 21h8M12 17v4"/>
+            </svg>
+          </div>
+          {/* Text */}
+          <div className="flex-1 min-w-0">
+            <div className="text-xs font-semibold truncate" style={{ color: 'var(--t1)' }}>{cfg.name}</div>
+            <div className="text-[10px]" style={{ color: 'var(--t3)' }}>
+              {cfg.data.nodes.length} {t('sidebar.agentsCount', 'agents')} · {cfg.data.connections.length} {t('sidebar.connectionsCount', 'connections')}
+            </div>
+          </div>
+          {/* Delete button */}
+          <button
+            onClick={(e) => { e.stopPropagation(); deleteScenario(cfg.name) }}
+            className="shrink-0 opacity-0 group-hover:opacity-100 rounded p-1 transition-opacity border-0 bg-transparent cursor-pointer"
+            aria-label={t('sidebar.deleteConfig', 'Delete {{name}}', { name: cfg.name })}
+            title={t('sidebar.delete', 'Delete')}
+            style={{ color: '#F87171' }}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
+            </svg>
+          </button>
         </div>
       ))}
     </>

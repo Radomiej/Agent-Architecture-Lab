@@ -1,6 +1,5 @@
 import { create } from 'zustand'
 import type { CanvasNode, Connection } from '../types'
-import type { PresetDef } from '../data/presets'
 import { AD_MAP } from '../data/agents'
 
 const LS_KEY = 'acCanvas'
@@ -78,7 +77,7 @@ interface CanvasStore {
   setZoom: (zoom: number) => void
   setPan: (pan: { x: number; y: number }) => void
   clearCanvas: () => void
-  loadPreset: (preset: PresetDef) => void
+  replaceGraph: (nodes: CanvasNode[], connections: Connection[]) => void
 }
 
 export const useCanvasStore = create<CanvasStore>((set) => ({
@@ -160,32 +159,7 @@ export const useCanvasStore = create<CanvasStore>((set) => ({
     set({ nodes: [], connections: [], selected: [], zoom: 1, pan: { x: 0, y: 0 } })
   },
 
-  loadPreset: (preset) => {
-    const ts = Date.now()
-    const nodes: CanvasNode[] = preset.nodes.map((pn, i) => ({
-      id: `${pn.id}-${ts}-${i}`,
-      agentId: pn.id,
-      x: pn.x,
-      y: pn.y,
-      connections: [],
-    }))
-
-    const connections: Connection[] = []
-    preset.nodes.forEach((pn, i) => {
-      if (pn.c) {
-        for (const targetIdx of pn.c) {
-          if (targetIdx < 0 || targetIdx >= nodes.length) {
-            console.warn(`Preset "${preset.id}" node[${i}] has out-of-bounds connection index ${targetIdx}`)
-            continue
-          }
-          const targetNode = nodes[targetIdx]
-          if (targetNode) {
-            connections.push({ from: nodes[i].id, to: targetNode.id })
-          }
-        }
-      }
-    })
-
+  replaceGraph: (nodes, connections) => {
     saveCanvas({ nodes, connections, zoom: 1, pan: { x: 0, y: 0 } })
     set({ nodes, connections, selected: [], zoom: 1, pan: { x: 0, y: 0 } })
   },

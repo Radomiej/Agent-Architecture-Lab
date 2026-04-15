@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useId, useState } from 'react'
 import { useUiStore } from '../../store/uiStore'
 import { useLLMStore } from '../../store/llmStore'
 import { useMcpStore } from '../../store/mcpStore'
@@ -17,6 +17,18 @@ const TIER_LABELS: Record<ModelType, string> = {
 
 const MODAL_ID = 'settings'
 
+// ─── Tool Settings constants ──────────────────────────────────────────────────
+
+const BUILTIN_TOOL_NAMES = ['Read', 'Write', 'Read/Write', 'Bash', 'WebSearch', 'Agent', 'TaskCreate'] as const
+
+interface QuickGroup { name: string; toolNames: string[]; icon: string; hint: string }
+const QUICK_START_GROUPS: QuickGroup[] = [
+  { name: 'web_search',   toolNames: ['WebSearch'],                   icon: '🔍', hint: 'Web search via Sonar/Perplexity' },
+  { name: 'file_tools',   toolNames: ['Read', 'Write', 'Read/Write'], icon: '📁', hint: 'File read/write operations' },
+  { name: 'dev_tools',    toolNames: ['Bash', 'Read', 'Write'],       icon: '🛠', hint: 'Bash + file access for builders' },
+  { name: 'docker_tools', toolNames: [],                              icon: '🐳', hint: 'Docker Desktop MCP tools (fill after connecting)' },
+]
+
 // Quick-pick model presets shown as chips under model inputs
 const MODEL_PRESETS: Record<LLMProvider, Partial<Record<ModelType, string[]>>> = {
   cometapi: {
@@ -33,10 +45,187 @@ const MODEL_PRESETS: Record<LLMProvider, Partial<Record<ModelType, string[]>>> =
 
 type TestState = 'idle' | 'testing' | 'ok' | 'error'
 
+// ─── Tiny primitives ──────────────────────────────────────────────────────────
+
+const TabBtn: React.FC<{ label: string; active: boolean; onClick: () => void }> = ({ label, active, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    style={{
+      padding: '10px 18px',
+      fontSize: '12px',
+      fontWeight: 600,
+      cursor: 'pointer',
+      background: 'none',
+      border: 'none',
+      borderBottom: `2px solid ${active ? 'var(--accent)' : 'transparent'}`,
+      color: active ? 'var(--t1)' : 'var(--t4)',
+      transition: 'color 0.15s, border-color 0.15s',
+      whiteSpace: 'nowrap',
+    }}
+  >
+    {label}
+  </button>
+)
+
+// ─── Group card ───────────────────────────────────────────────────────────────
+
+interface GroupCardProps {
+  group: McpToolGroup
+  mcpTools: { name: string; description?: string }[]
+  onUpdate: (id: string, name: string, toolNames: string[]) => void
+  onRemove: (id: string) => void
+}
+
+const GroupCard: React.FC<GroupCardProps> = ({ group, mcpTools, onUpdate, onRemove }) => {
+  const [open, setOpen] = useState(false)
+  const [nameDraft, setNameDraft] = useState(group.name)
+  const inputId = useId()
+
+  const toggleTool = (tool: string) => {
+    const next = group.toolNames.includes(tool)
+      ? group.toolNames.filter((t) => t !== tool)
+      : [...group.toolNames, tool]
+    onUpdate(group.id, nameDraft || group.name, next)
+  }
+
+  const commitName = () => {
+    if (nameDraft.trim() && nameDraft.trim() !== group.name) {
+      onUpdate(group.id, nameDraft.trim(), group.toolNames)
+    }
+  }
+
+  return (
+    <div style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: '8px', overflow: 'hidden' }}>
+      {/* Card header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px' }}>
+        {open ? (
+          <input
+            id={inputId}
+            value={nameDraft}
+            onChange={(e) => setNameDraft(e.target.value)}
+            onBlur={commitName}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur() } }}
+            placeholder="group name"
+            style={{ ...inputStyle, fontSize: '12px', fontWeight: 600, flex: 1, height: '28px', padding: '4px 8px' }}
+          />
+        ) : (
+          <span style={{ flex: 1, fontSize: '13px', fontWeight: 600, color: 'var(--t1)', fontFamily: 'var(--ff-mono)' }}>
+            {group.name}
+          </span>
+        )}
+        <span style={{ fontSize: '11px', color: 'var(--t4)', flexShrink: 0 }}>
+          {group.toolNames.length} tool{group.toolNames.length !== 1 ? 's' : ''}
+        </span>
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          style={{ ...smallBtnStyle, color: open ? '#A78BFA' : 'var(--t3)', background: open ? 'rgba(167,139,250,0.12)' : 'var(--bg-card)', border: `1px solid ${open ? 'rgba(167,139,250,0.35)' : 'var(--border)'}` }}
+        >
+          {open ? 'Done' : 'Edit'}
+        </button>
+        <button
+          type="button"
+          onClick={() => onRemove(group.id)}
+          aria-label={`Delete group ${group.name}`}
+          style={{ ...smallBtnStyle, color: '#F87171', background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.25)' }}
+        >
+          ×
+        </button>
+      </div>
+
+      {/* Current tools chips */}
+      {group.toolNames.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', padding: '0 10px 8px' }}>
+          {group.toolNames.map((tool) => (
+            <span
+              key={tool}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', padding: '2px 7px', borderRadius: '4px', fontSize: '11px', fontFamily: 'var(--ff-mono)', background: 'rgba(167,139,250,0.12)', border: '1px solid rgba(167,139,250,0.3)', color: '#C4B5FD' }}
+            >
+              {tool}
+              {open && (
+                <button type="button" onClick={() => toggleTool(tool)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#F87171', fontSize: '11px', padding: 0, lineHeight: 1 }} aria-label={`Remove ${tool}`}>×</button>
+              )}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {group.toolNames.length === 0 && !open && (
+        <p style={{ padding: '0 10px 8px', fontSize: '11px', color: 'var(--t4)', margin: 0 }}>No tools — click Edit to add</p>
+      )}
+
+      {/* Tool picker (expanded) */}
+      {open && (
+        <div style={{ borderTop: '1px solid var(--border)', padding: '10px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {/* Built-in tools */}
+          <div>
+            <div style={{ fontSize: '10px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--t4)', marginBottom: '5px' }}>
+              Built-in
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+              {BUILTIN_TOOL_NAMES.map((tool) => {
+                const isIn = group.toolNames.includes(tool)
+                return (
+                  <button
+                    key={tool}
+                    type="button"
+                    onClick={() => toggleTool(tool)}
+                    style={{
+                      padding: '2px 8px', borderRadius: '4px', fontSize: '11px', cursor: 'pointer', fontFamily: 'var(--ff-mono)',
+                      background: isIn ? 'rgba(52,211,153,0.16)' : 'var(--bg-card)',
+                      border: `1px solid ${isIn ? 'rgba(52,211,153,0.45)' : 'var(--border)'}`,
+                      color: isIn ? '#34D399' : 'var(--t3)',
+                    }}
+                  >
+                    {isIn ? '✓ ' : ''}{tool}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* MCP tools (if connected) */}
+          {mcpTools.length > 0 && (
+            <div>
+              <div style={{ fontSize: '10px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--t4)', marginBottom: '5px' }}>
+                MCP tools ({mcpTools.length} available)
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', maxHeight: '100px', overflowY: 'auto' }}>
+                {mcpTools.map((tool) => {
+                  const isIn = group.toolNames.includes(tool.name)
+                  return (
+                    <button
+                      key={tool.name}
+                      type="button"
+                      onClick={() => toggleTool(tool.name)}
+                      title={tool.description}
+                      style={{
+                        padding: '2px 8px', borderRadius: '4px', fontSize: '11px', cursor: 'pointer', fontFamily: 'var(--ff-mono)',
+                        background: isIn ? 'rgba(52,211,153,0.16)' : 'rgba(52,211,153,0.06)',
+                        border: `1px solid ${isIn ? 'rgba(52,211,153,0.45)' : 'rgba(52,211,153,0.2)'}`,
+                        color: '#34D399',
+                      }}
+                    >
+                      {isIn ? '✓ ' : ''}{tool.name}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 const LLMSettingsContent: React.FC = () => {
   const { closeModal } = useUiStore()
   const llm = useLLMStore()
   const mcp = useMcpStore()
+
+  const [activeTab, setActiveTab] = useState<'llm' | 'tools'>('llm')
 
   // ── MCP Gateway state ───────────────────────────────────────────────────────
   const [mcpUrl, setMcpUrl] = useState(mcp.config.gatewayUrl)
@@ -44,8 +233,7 @@ const LLMSettingsContent: React.FC = () => {
   const [mcpEnabled, setMcpEnabled] = useState(mcp.config.enabled)
   const [showMcpToken, setShowMcpToken] = useState(false)
   const [mcpToolGroupsDraft, setMcpToolGroupsDraft] = useState<McpToolGroup[]>(mcp.toolGroups)
-  const [groupNameDraft, setGroupNameDraft] = useState('')
-  const [groupToolsDraft, setGroupToolsDraft] = useState('')
+  const [newGroupName, setNewGroupName] = useState('')
 
   // ── LLM Provider state ──────────────────────────────────────────────────────
   const [provider, setProviderDraft] = useState<LLMProvider>(llm.provider)
@@ -138,35 +326,27 @@ const LLMSettingsContent: React.FC = () => {
   const parseGroupTools = (raw: string): string[] =>
     Array.from(new Set(raw.split(',').map((tool) => tool.trim()).filter(Boolean)))
 
-  const addGroup = () => {
-    const name = groupNameDraft.trim()
-    if (!name) return
+  const addGroup = (name: string, toolNames: string[]) => {
+    const trimmed = name.trim()
+    if (!trimmed) return
+    if (mcpToolGroupsDraft.some((g) => g.name === trimmed)) return
     const nextGroup: McpToolGroup = {
       id: `grp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      name,
-      toolNames: parseGroupTools(groupToolsDraft),
+      name: trimmed,
+      toolNames: Array.from(new Set(toolNames.map((t) => t.trim()).filter(Boolean))),
     }
     setMcpToolGroupsDraft((groups) => [...groups, nextGroup])
-    setGroupNameDraft('')
-    setGroupToolsDraft('')
   }
 
   const removeGroup = (id: string) => {
     setMcpToolGroupsDraft((groups) => groups.filter((group) => group.id !== id))
   }
 
-  const updateGroupName = (id: string, name: string) => {
-    setMcpToolGroupsDraft((groups) => groups.map((group) => (
-      group.id === id ? { ...group, name } : group
-    )))
+  const updateGroup = (id: string, name: string, toolNames: string[]) => {
+    setMcpToolGroupsDraft((groups) => groups.map((group) =>
+      group.id === id ? { ...group, name, toolNames: parseGroupTools(toolNames.join(',')) } : group
+    ))
   }
-
-  const updateGroupTools = (id: string, toolsRaw: string) => {
-    setMcpToolGroupsDraft((groups) => groups.map((group) => (
-      group.id === id ? { ...group, toolNames: parseGroupTools(toolsRaw) } : group
-    )))
-  }
-
   const testLabel = (s: TestState) =>
     s === 'testing' ? '⏳ Testing…' : s === 'ok' ? '✓ Connected' : s === 'error' ? '✗ Failed' : 'Test Connection'
 
@@ -179,11 +359,21 @@ const LLMSettingsContent: React.FC = () => {
   })
 
   return (
-    <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', maxHeight: '82vh' }}>
 
-      {/* ═══════════════════════════════════════════════════════════════════════
-          SECTION 1 — LLM Provider
-          ═══════════════════════════════════════════════════════════════════════ */}
+      {/* ── Tab bar ──────────────────────────────────────────────────────────── */}
+      <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', padding: '0 4px', flexShrink: 0 }}>
+        <TabBtn label="🤖 LLM Settings" active={activeTab === 'llm'} onClick={() => setActiveTab('llm')} />
+        <TabBtn label="🔧 Tool Settings" active={activeTab === 'tools'} onClick={() => setActiveTab('tools')} />
+      </div>
+
+      {/* ── Scrollable body ───────────────────────────────────────────────────── */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+
+      {/* ═══════════════════════════════ LLM TAB ═══════════════════════════════ */}
+      {activeTab === 'llm' && <>
+
+      {/* SECTION 1 — LLM Provider */}
       <div style={sectionBoxStyle}>
         <div style={sectionTitleStyle}>🤖 LLM Provider — for agents</div>
 
@@ -309,9 +499,7 @@ const LLMSettingsContent: React.FC = () => {
         </div>
       </div>
 
-      {/* ═══════════════════════════════════════════════════════════════════════
-          SECTION 2 — Web Search Tool
-          ═══════════════════════════════════════════════════════════════════════ */}
+      {/* SECTION 2 — Web Search Tool */}
       <div style={sectionBoxStyle}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
           <div style={sectionTitleStyle}>🔍 Web Search Tool — for research agents</div>
@@ -428,207 +616,166 @@ const LLMSettingsContent: React.FC = () => {
         </div>
       </div>
 
-      {/* ═══════════════════════════════════════════════════════════════════════
-          SECTION 3 — MCP Gateway (Docker Desktop)
-          ═══════════════════════════════════════════════════════════════════════ */}
+        </>}
+
+        {/* ═══════════════════════════════ TOOLS TAB ══════════════════════════════ */}
+      {activeTab === 'tools' && <>
+
+      {/* SECTION A — Tool Sources */}
       <div style={sectionBoxStyle}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-          <div style={sectionTitleStyle}>🐳 MCP Gateway — Docker Desktop tools</div>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '12px', color: mcpEnabled ? '#34D399' : 'var(--t4)' }}>
-            <input
-              type="checkbox"
-              checked={mcpEnabled}
-              onChange={(e) => setMcpEnabled(e.target.checked)}
-              style={{ width: '14px', height: '14px', cursor: 'pointer' }}
-            />
-            {mcpEnabled ? 'Enabled' : 'Disabled'}
-          </label>
+        <div style={sectionTitleStyle}>🔌 Tool Sources</div>
+
+        {/* Sonar card */}
+        <div style={{ background: 'var(--bg-input)', border: `1px solid ${wsEnabled ? 'rgba(6,182,212,0.3)' : 'var(--border)'}`, borderRadius: '8px', padding: '12px', marginBottom: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+            <span style={{ fontSize: '16px' }}>🔍</span>
+            <span style={{ fontWeight: 600, fontSize: '13px', color: 'var(--t1)' }}>Sonar · Web Search</span>
+            <span style={{
+              marginLeft: 'auto', fontSize: '10px', fontWeight: 700, padding: '2px 7px', borderRadius: '10px', textTransform: 'uppercase',
+              background: wsEnabled ? 'rgba(6,182,212,0.12)' : 'var(--bg-card)',
+              color: wsEnabled ? '#06B6D4' : 'var(--t4)',
+              border: `1px solid ${wsEnabled ? 'rgba(6,182,212,0.3)' : 'var(--border)'}`,
+            }}>
+              {wsEnabled ? 'enabled' : 'disabled'}
+            </span>
+          </div>
+          {wsEnabled ? (
+            <p style={{ ...hintStyle, margin: 0 }}>
+              {wsProvider === 'perplexity' ? '🟣 Perplexity direct' : '🔀 via OpenRouter'} · Model: <code style={{ fontFamily: 'var(--ff-mono)' }}>{wsModel}</code> · Built-in tool token: <code style={{ fontFamily: 'var(--ff-mono)', color: '#C4B5FD' }}>WebSearch</code>
+            </p>
+          ) : (
+            <p style={{ ...hintStyle, margin: 0 }}>
+              Configure in <button type="button" onClick={() => setActiveTab('llm')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#A78BFA', fontSize: '11px', padding: 0, textDecoration: 'underline' }}>LLM Settings → Web Search Tool</button>
+            </p>
+          )}
         </div>
 
-        <div style={{ opacity: mcpEnabled ? 1 : 0.45, pointerEvents: mcpEnabled ? 'auto' : 'none', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <p style={hintStyle}>
-            Start the gateway with:{' '}
-            <code style={{ userSelect: 'all' }}>docker mcp gateway run --port 8808 --transport streaming</code>
-            {' '}and paste the URL + Bearer token shown in the output.
+        {/* Docker Desktop MCP card */}
+        <div style={{ background: 'var(--bg-input)', border: `1px solid ${mcp.status === 'connected' ? 'rgba(52,211,153,0.3)' : mcp.status === 'error' ? 'rgba(248,113,113,0.25)' : 'var(--border)'}`, borderRadius: '8px', padding: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+            <span style={{ fontSize: '16px' }}>🐳</span>
+            <span style={{ fontWeight: 600, fontSize: '13px', color: 'var(--t1)' }}>Docker Desktop · MCP Gateway</span>
+            <label style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', fontSize: '11px', color: mcpEnabled ? '#34D399' : 'var(--t4)' }}>
+              <input type="checkbox" checked={mcpEnabled} onChange={(e) => setMcpEnabled(e.target.checked)} style={{ width: '13px', height: '13px', cursor: 'pointer' }} />
+              {mcpEnabled ? 'Enabled' : 'Disabled'}
+            </label>
+          </div>
+          <p style={{ ...hintStyle, marginBottom: '10px' }}>
+            Run: <code style={{ userSelect: 'all', fontSize: '10px' }}>docker mcp gateway run --port 8808 --transport streaming</code>
           </p>
-
-          {/* Gateway URL */}
-          <div>
-            <label style={labelStyle}>Gateway URL</label>
-            <input
-              type="url"
-              value={mcpUrl}
-              onChange={(e) => setMcpUrl(e.target.value)}
-              placeholder="http://localhost:8808/mcp"
-              aria-label="MCP Gateway URL"
-              style={inputStyle}
-            />
-          </div>
-
-          {/* Bearer Token */}
-          <div>
-            <label style={labelStyle}>Bearer Token</label>
+          <div style={{ opacity: mcpEnabled ? 1 : 0.5, pointerEvents: mcpEnabled ? 'auto' : 'none', display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <input
-                type={showMcpToken ? 'text' : 'password'}
-                value={mcpToken}
-                onChange={(e) => setMcpToken(e.target.value)}
-                placeholder="h0eagz… (leave empty if not required)"
-                aria-label="MCP Bearer Token"
-                style={inputStyle}
-              />
-              <button type="button" onClick={() => setShowMcpToken((v) => !v)} style={iconBtnStyle} aria-label={showMcpToken ? 'Hide token' : 'Show token'}>
-                {showMcpToken ? '🙈' : '👁'}
-              </button>
+              <input type="url" value={mcpUrl} onChange={(e) => setMcpUrl(e.target.value)} placeholder="http://localhost:8808/mcp" aria-label="MCP Gateway URL" style={{ ...inputStyle, fontSize: '12px', flex: 1 }} />
+              <input type={showMcpToken ? 'text' : 'password'} value={mcpToken} onChange={(e) => setMcpToken(e.target.value)} placeholder="Bearer token (optional)" aria-label="MCP Bearer Token" style={{ ...inputStyle, fontSize: '12px', flex: 1 }} />
+              <button type="button" onClick={() => setShowMcpToken((v) => !v)} style={iconBtnStyle} aria-label={showMcpToken ? 'Hide token' : 'Show token'}>{showMcpToken ? '🙈' : '👁'}</button>
             </div>
-          </div>
 
-          {/* Current status + tool count */}
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: '10px',
-            padding: '8px 12px', borderRadius: '6px',
-            background: mcp.status === 'connected'
-              ? 'rgba(52,211,153,0.08)'
-              : mcp.status === 'error'
-              ? 'rgba(248,113,113,0.08)'
-              : 'var(--bg-input)',
-            border: `1px solid ${mcp.status === 'connected' ? 'rgba(52,211,153,0.25)' : mcp.status === 'error' ? 'rgba(248,113,113,0.25)' : 'var(--border)'}`,
-          }}>
-            <span style={{ fontSize: '12px', color: mcp.status === 'connected' ? '#34D399' : mcp.status === 'error' ? '#F87171' : 'var(--t3)' }}>
-              {mcp.status === 'connected' && `✓ Connected — ${mcp.tools.length} tool${mcp.tools.length !== 1 ? 's' : ''} available`}
-              {mcp.status === 'connecting' && '⏳ Connecting…'}
-              {mcp.status === 'error' && `✗ ${mcp.errorMsg ?? 'Connection failed'}`}
-              {mcp.status === 'disconnected' && '○ Disconnected'}
-            </span>
-            {mcp.status === 'connected' && (
-              <button
-                type="button"
-                onClick={() => { void mcp.refreshTools() }}
-                style={{ ...btnStyle, padding: '3px 10px', fontSize: '11px', background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--t2)', cursor: 'pointer', marginLeft: 'auto' }}
-              >
-                ↺ Refresh
-              </button>
-            )}
-          </div>
+            {/* Status row */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 10px', borderRadius: '6px', background: mcp.status === 'connected' ? 'rgba(52,211,153,0.08)' : mcp.status === 'error' ? 'rgba(248,113,113,0.08)' : 'var(--bg-card)', border: `1px solid ${mcp.status === 'connected' ? 'rgba(52,211,153,0.2)' : mcp.status === 'error' ? 'rgba(248,113,113,0.2)' : 'var(--border)'}` }}>
+              <span style={{ fontSize: '12px', color: mcp.status === 'connected' ? '#34D399' : mcp.status === 'error' ? '#F87171' : 'var(--t3)' }}>
+                {mcp.status === 'connected' && `✓ ${mcp.tools.length} tool${mcp.tools.length !== 1 ? 's' : ''} available`}
+                {mcp.status === 'connecting' && '⏳ Connecting…'}
+                {mcp.status === 'error' && `✗ ${mcp.errorMsg ?? 'Connection failed'}`}
+                {mcp.status === 'disconnected' && '○ Not connected'}
+              </span>
+              {mcp.status === 'connected' && (
+                <button type="button" onClick={() => { void mcp.refreshTools() }} style={{ ...smallBtnStyle, marginLeft: 'auto', color: 'var(--t2)', background: 'var(--bg-card)', border: '1px solid var(--border)' }}>↺ Refresh</button>
+              )}
+            </div>
 
-          {/* Tool list (collapsed) */}
-          {mcp.status === 'connected' && mcp.tools.length > 0 && (
-            <details style={{ fontSize: '11px', color: 'var(--t3)' }}>
-              <summary style={{ cursor: 'pointer', userSelect: 'none', color: 'var(--t2)', marginBottom: '6px' }}>
-                Available tools ({mcp.tools.length})
-              </summary>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', maxHeight: '140px', overflowY: 'auto' }}>
+            {/* Tool grid (if connected) */}
+            {mcp.status === 'connected' && mcp.tools.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', maxHeight: '90px', overflowY: 'auto' }}>
                 {mcp.tools.map((t) => (
-                  <span
-                    key={t.name}
-                    title={t.description}
-                    style={{
-                      padding: '2px 7px', borderRadius: '4px', fontSize: '11px',
-                      background: 'rgba(52,211,153,0.08)', border: '1px solid rgba(52,211,153,0.2)',
-                      color: '#34D399', fontFamily: 'var(--ff-mono)',
-                    }}
-                  >
-                    {t.name}
-                  </span>
+                  <span key={t.name} title={t.description} style={{ padding: '2px 7px', borderRadius: '4px', fontSize: '11px', background: 'rgba(52,211,153,0.08)', border: '1px solid rgba(52,211,153,0.2)', color: '#34D399', fontFamily: 'var(--ff-mono)' }}>{t.name}</span>
                 ))}
               </div>
-            </details>
-          )}
-
-          <div style={{ borderTop: '1px solid var(--border)', paddingTop: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <div style={{ ...labelStyle, marginBottom: 0 }}>MCP Tool Groups</div>
-            <p style={hintStyle}>
-              Assign MCP tools into named groups. Add group token name to an agent tools list to attach all tools from that group.
-            </p>
-
-            {mcpToolGroupsDraft.length === 0 && (
-              <div style={{ fontSize: '11px', color: 'var(--t4)' }}>No tool groups yet.</div>
             )}
-
-            {mcpToolGroupsDraft.map((group) => (
-              <div key={group.id} style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: '8px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <input
-                    value={group.name}
-                    onChange={(e) => updateGroupName(group.id, e.target.value)}
-                    placeholder="group name (e.g. webtool)"
-                    style={{ ...inputStyle, fontSize: '12px' }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeGroup(group.id)}
-                    style={{ ...btnStyle, padding: '6px 10px', fontSize: '11px', background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.3)', color: '#F87171', cursor: 'pointer' }}
-                  >
-                    Remove
-                  </button>
-                </div>
-
-                <input
-                  value={group.toolNames.join(', ')}
-                  onChange={(e) => updateGroupTools(group.id, e.target.value)}
-                  placeholder="toolA, toolB, toolC"
-                  style={{ ...inputStyle, fontSize: '12px' }}
-                />
-
-                {mcp.tools.length > 0 && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                    {mcp.tools.map((tool) => (
-                      <button
-                        key={`${group.id}-${tool.name}`}
-                        type="button"
-                        onClick={() => {
-                          const next = Array.from(new Set([...group.toolNames, tool.name]))
-                          setMcpToolGroupsDraft((groups) => groups.map((g) => g.id === group.id ? { ...g, toolNames: next } : g))
-                        }}
-                        style={{
-                          padding: '2px 7px',
-                          borderRadius: '4px',
-                          fontSize: '11px',
-                          background: group.toolNames.includes(tool.name) ? 'rgba(52,211,153,0.16)' : 'rgba(52,211,153,0.08)',
-                          border: `1px solid ${group.toolNames.includes(tool.name) ? 'rgba(52,211,153,0.45)' : 'rgba(52,211,153,0.2)'}`,
-                          color: '#34D399',
-                          fontFamily: 'var(--ff-mono)',
-                          cursor: 'pointer',
-                        }}
-                        title={tool.description}
-                      >
-                        {tool.name}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-
-            <div style={{ background: 'var(--bg-input)', border: '1px dashed var(--border)', borderRadius: '8px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <input
-                value={groupNameDraft}
-                onChange={(e) => setGroupNameDraft(e.target.value)}
-                placeholder="new group name"
-                style={{ ...inputStyle, fontSize: '12px' }}
-              />
-              <input
-                value={groupToolsDraft}
-                onChange={(e) => setGroupToolsDraft(e.target.value)}
-                placeholder="tool names separated by comma"
-                style={{ ...inputStyle, fontSize: '12px' }}
-              />
-              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <button
-                  type="button"
-                  onClick={addGroup}
-                  style={{ ...btnStyle, padding: '6px 10px', fontSize: '11px', background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)', color: '#34D399', cursor: 'pointer' }}
-                >
-                  + Add group
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       </div>
+          title="Removes API keys and model settings saved in this browser"
+      {/* SECTION B — Tool Groups */}
+      <div style={sectionBoxStyle}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '4px' }}>
+          <div style={sectionTitleStyle}>📦 Tool Groups</div>
+          <span style={{ fontSize: '11px', color: 'var(--t4)', marginBottom: '14px' }}>{mcpToolGroupsDraft.length} group{mcpToolGroupsDraft.length !== 1 ? 's' : ''}</span>
+        </div>
+        <p style={{ ...hintStyle, marginBottom: '12px' }}>
+          Add a group name to an agent's tool list → all tools in that group are injected at runtime. Groups work across both built-in tools and live MCP tools.
+        </p>
+        {/* Quick-start chips */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px', paddingBottom: '14px', borderBottom: '1px solid var(--border)' }}>
+          <span style={{ fontSize: '11px', color: 'var(--t4)', alignSelf: 'center', marginRight: '2px' }}>Quick-start:</span>
+          {QUICK_START_GROUPS.map((qg) => {
+            const exists = mcpToolGroupsDraft.some((g) => g.name === qg.name)
+            return (
+              <button
+                key={qg.name}
+                type="button"
+                disabled={exists}
+                onClick={() => addGroup(qg.name, qg.toolNames)}
+                title={qg.hint}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '4px',
+                  padding: '3px 10px', borderRadius: '12px', fontSize: '11px', cursor: exists ? 'default' : 'pointer', fontFamily: 'var(--ff-mono)',
+                  background: exists ? 'var(--bg-card)' : 'rgba(167,139,250,0.1)',
+                  border: `1px solid ${exists ? 'var(--border)' : 'rgba(167,139,250,0.35)'}`,
+                  color: exists ? 'var(--t4)' : '#C4B5FD',
+                  opacity: exists ? 0.6 : 1,
+                }}
+              >
+                {qg.icon} {qg.name} {exists ? '✓' : '+'}
+              </button>
+            )
+          })}
+        </div>
+        {/* Group cards */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
+          {mcpToolGroupsDraft.length === 0 && (
+            <p style={{ fontSize: '12px', color: 'var(--t4)', textAlign: 'center', padding: '16px 0' }}>
+              No groups yet — use quick-start above or create one below.
+            </p>
+          )}
+          {mcpToolGroupsDraft.map((group) => (
+            <GroupCard
+              key={group.id}
+              group={group}
+              mcpTools={mcp.tools}
+              onUpdate={updateGroup}
+              onRemove={removeGroup}
+            />
+          ))}
+        </div>
+        {/* New group form */}
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', paddingTop: '12px', borderTop: '1px solid var(--border)' }}>
+          <input
+            value={newGroupName}
+            onChange={(e) => setNewGroupName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') { addGroup(newGroupName, []); setNewGroupName('') } }}
+            placeholder="new group name…"
+            style={{ ...inputStyle, fontSize: '12px', flex: 1 }}
+          />
+          <button
+            type="button"
+            onClick={() => { addGroup(newGroupName, []); setNewGroupName('') }}
+            disabled={!newGroupName.trim()}
+            style={{ ...smallBtnStyle, color: '#34D399', background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)', opacity: newGroupName.trim() ? 1 : 0.5, cursor: newGroupName.trim() ? 'pointer' : 'default' }}
+          >
+            + Create
+          </button>
+        </div>
+      </div>
+      </>}
 
-      {/* ── Global actions ──────────────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+      <div style={{ flex: 1 }} />
+      </div>{/* end scrollable body */}
+
+      {/* ── Footer actions ────────────────────────────────────────────────────── */}
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', padding: '12px 20px', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
+        <button type="button" onClick={closeModal} style={{ ...btnStyle, background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--t2)', cursor: 'pointer' }}>
+          Cancel
+        </button>
         <button
           type="button"
           onClick={handleClearData}
@@ -636,10 +783,6 @@ const LLMSettingsContent: React.FC = () => {
           style={{ ...btnStyle, background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.3)', color: '#F87171', cursor: 'pointer' }}
         >
           🗑 Clear saved data
-        </button>
-        <div style={{ flex: 1 }} />
-        <button type="button" onClick={closeModal} style={{ ...btnStyle, background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--t2)', cursor: 'pointer' }}>
-          Cancel
         </button>
         <button type="button" onClick={handleSave} style={{ ...btnStyle, background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer' }}>
           Save
@@ -650,7 +793,7 @@ const LLMSettingsContent: React.FC = () => {
 }
 
 export const LLMSettingsModal: React.FC = () => (
-  <ModalBase modalId={MODAL_ID} title="⚙ LLM Settings" width={600}>
+  <ModalBase modalId={MODAL_ID} title="⚙ Settings" width={620}>
     <LLMSettingsContent />
   </ModalBase>
 )
@@ -734,5 +877,14 @@ const errorBoxStyle: React.CSSProperties = {
   border: '1px solid rgba(248,113,113,0.3)',
   color: '#F87171',
   fontSize: '12px',
+}
+
+const smallBtnStyle: React.CSSProperties = {
+  padding: '3px 10px',
+  borderRadius: '5px',
+  fontSize: '11px',
+  fontWeight: 600,
+  cursor: 'pointer',
+  flexShrink: 0,
 }
 

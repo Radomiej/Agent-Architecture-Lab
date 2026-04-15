@@ -1,24 +1,11 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { useCanvasStore } from '../store/canvasStore'
 import type { CanvasNode } from '../types'
-import type { PresetDef } from '../data/presets'
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
 function makeNode(id: string, agentId = 'orchestrator', x = 0, y = 0): CanvasNode {
   return { id, agentId, x, y, connections: [] }
-}
-
-// A minimal preset with two nodes and one connection.
-const MINI_PRESET: PresetDef = {
-  id: 'mini',
-  name: 'Mini',
-  cat: 'TEST',
-  desc: 'test preset',
-  nodes: [
-    { id: 'orchestrator', x: 100, y: 100, c: [1] },
-    { id: 'backend',      x: 200, y: 200 },
-  ],
 }
 
 // ─── reset store between tests ─────────────────────────────────────────────────
@@ -240,65 +227,37 @@ describe('canvasStore – clearCanvas', () => {
   })
 })
 
-// ─── loadPreset ───────────────────────────────────────────────────────────────
+// ─── replaceGraph ─────────────────────────────────────────────────────────────
 
-describe('canvasStore – loadPreset', () => {
-  it('loads nodes from the preset', () => {
-    useCanvasStore.getState().loadPreset(MINI_PRESET)
-    expect(useCanvasStore.getState().nodes).toHaveLength(2)
-  })
-
-  it('maps preset agent ids to canvas nodes', () => {
-    useCanvasStore.getState().loadPreset(MINI_PRESET)
-    const agentIds = useCanvasStore.getState().nodes.map((n) => n.agentId)
-    expect(agentIds).toContain('orchestrator')
-    expect(agentIds).toContain('backend')
-  })
-
-  it('creates connection from c index', () => {
-    useCanvasStore.getState().loadPreset(MINI_PRESET)
-    const conns = useCanvasStore.getState().connections
-    expect(conns).toHaveLength(1)
-    const nodes = useCanvasStore.getState().nodes
-    // The connection should go from orchestrator-node to backend-node
-    const orchNode = nodes.find((n) => n.agentId === 'orchestrator')!
-    const backNode = nodes.find((n) => n.agentId === 'backend')!
-    expect(conns[0]).toEqual({ from: orchNode.id, to: backNode.id })
-  })
-
-  it('clears any existing canvas state before loading', () => {
+describe('canvasStore – replaceGraph', () => {
+  it('replaces nodes and connections in a single operation', () => {
     useCanvasStore.getState().addNode(makeNode('old-node'))
-    useCanvasStore.getState().loadPreset(MINI_PRESET)
-    // Only the preset nodes remain
-    expect(useCanvasStore.getState().nodes).toHaveLength(2)
-    expect(useCanvasStore.getState().nodes.find((n) => n.id === 'old-node')).toBeUndefined()
+
+    const nodes = [
+      makeNode('n1', 'orchestrator', 100, 100),
+      makeNode('n2', 'backend', 200, 200),
+    ]
+    const connections = [{ from: 'n1', to: 'n2' }]
+
+    useCanvasStore.getState().replaceGraph(nodes, connections)
+
+    const state = useCanvasStore.getState()
+    expect(state.nodes).toHaveLength(2)
+    expect(state.connections).toEqual(connections)
+    expect(state.nodes.find((n) => n.id === 'old-node')).toBeUndefined()
   })
 
-  it('assigns unique ids to each loaded node', () => {
-    useCanvasStore.getState().loadPreset(MINI_PRESET)
-    const ids = useCanvasStore.getState().nodes.map((n) => n.id)
-    expect(new Set(ids).size).toBe(ids.length)
-  })
+  it('clears selection and resets viewport when replacing graph', () => {
+    useCanvasStore.getState().addNode(makeNode('n1'))
+    useCanvasStore.getState().selectNode('n1')
+    useCanvasStore.getState().setZoom(1.8)
+    useCanvasStore.getState().setPan({ x: 77, y: -33 })
 
-  it('preserves x and y coordinates from the preset definition', () => {
-    useCanvasStore.getState().loadPreset(MINI_PRESET)
-    const orchNode = useCanvasStore.getState().nodes.find((n) => n.agentId === 'orchestrator')!
-    expect(orchNode.x).toBe(100)
-    expect(orchNode.y).toBe(100)
-  })
+    useCanvasStore.getState().replaceGraph([], [])
 
-  it('skips out-of-bounds connection indices without throwing', () => {
-    const badPreset: PresetDef = {
-      id: 'bad',
-      name: 'Bad',
-      cat: 'TEST',
-      desc: '',
-      nodes: [
-        { id: 'orchestrator', x: 0, y: 0, c: [99] }, // 99 is out of bounds
-        { id: 'backend', x: 100, y: 100 },
-      ],
-    }
-    expect(() => useCanvasStore.getState().loadPreset(badPreset)).not.toThrow()
-    expect(useCanvasStore.getState().connections).toHaveLength(0)
+    const state = useCanvasStore.getState()
+    expect(state.selected).toHaveLength(0)
+    expect(state.zoom).toBe(1)
+    expect(state.pan).toEqual({ x: 0, y: 0 })
   })
 })
