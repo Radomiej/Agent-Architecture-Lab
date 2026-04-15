@@ -8,13 +8,19 @@ import { PhaseChip } from '../primitives/PhaseChip'
 import { ModelBadge } from '../primitives/ModelBadge'
 import { VerdictPanel } from '../primitives/VerdictPanel'
 import { getAgentColor, getPresetColor } from '../../data/agentColors'
-import { useSimulationStore } from '../../store/simulationStore'
+import { useMockSimulationStore } from '../../store/mockSimulationStore'
+import { usePipelineStore } from '../../store/pipelineStore'
+import { useExecutionHistoryStore } from '../../store/executionHistoryStore'
+import { useOrchestrationStore } from '../../store/orchestrationStore'
 import { useMcpStore } from '../../store/mcpStore'
 import { getAgentToolTokens } from '../../utils/resolveAgentTools'
 
 export const RightSidebar: React.FC = () => {
   const { selectedAgentId, selectedPresetId, theme, openModal } = useUiStore()
-  const { messages, isRunning, phase, isPipelineRunning, loopCount, loopMax, stopPipeline } = useSimulationStore()
+  const messages = useExecutionHistoryStore((s) => s.messages)
+  const { isRunning } = useMockSimulationStore()
+  const { phase } = useOrchestrationStore()
+  const { isPipelineRunning, loopCount, loopMax, stopPipeline } = usePipelineStore()
   const openReview = () => openModal('review')
 
   if (!selectedAgentId && !selectedPresetId) {

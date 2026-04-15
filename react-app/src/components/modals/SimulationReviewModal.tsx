@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ModalBase } from './ModalBase'
-import { useSimulationStore } from '../../store/simulationStore'
+import { useExecutionHistoryStore } from '../../store/executionHistoryStore'
 import { useVfsStore } from '../../store/vfsStore'
 import { AD_MAP } from '../../data/agents'
 import type { LLMCallLog } from '../../types'
@@ -65,7 +65,7 @@ const TIMELINE_PREVIEW_LEN = 400
 
 const TimelineTab: React.FC = () => {
   const { t } = useTranslation()
-  const messages = useSimulationStore((s) => s.messages)
+  const messages = useExecutionHistoryStore((s) => s.messages)
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
 
   const toggleExpanded = (idx: number) => {
@@ -168,7 +168,7 @@ const CollapsibleSection: React.FC<{ label: string; content: string; defaultOpen
 
 const AgentsTab: React.FC = () => {
   const { t } = useTranslation()
-  const executionLog = useSimulationStore((s) => s.executionLog)
+  const executionLog = useExecutionHistoryStore((s) => s.executionLog)
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
   if (executionLog.length === 0) {
@@ -389,7 +389,7 @@ const FilesTab: React.FC = () => {
 
 const ToolsTab: React.FC = () => {
   const { t } = useTranslation()
-  const toolCalls = useSimulationStore((s) => s.toolCalls)
+  const toolCalls = useExecutionHistoryStore((s) => s.toolCalls)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [filterTool, setFilterTool] = useState<string>('all')
 
@@ -511,8 +511,8 @@ const ToolsTab: React.FC = () => {
 
 const SummaryTab: React.FC = () => {
   const { t } = useTranslation()
-  const messages = useSimulationStore((s) => s.messages)
-  const toolCalls = useSimulationStore((s) => s.toolCalls)
+  const messages = useExecutionHistoryStore((s) => s.messages)
+  const toolCalls = useExecutionHistoryStore((s) => s.toolCalls)
   // Subscribe to the stable Map reference to avoid infinite re-render loop
   const vfsFiles = useVfsStore((s) => s.files)
 

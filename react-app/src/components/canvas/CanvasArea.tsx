@@ -4,7 +4,7 @@ import { useUiStore } from '../../store/uiStore'
 import { AD_MAP } from '../../data/agents'
 import { AgentNode } from './AgentNode'
 import { ConnectionLayer } from './ConnectionLayer'
-import { useSimulationStore } from '../../store/simulationStore'
+import { useOrchestrationStore } from '../../store/orchestrationStore'
 
 const GRID_SIZE = 20
 
@@ -14,7 +14,7 @@ export const CanvasArea: React.FC = () => {
   const canvasRef = useRef<HTMLDivElement>(null)
   const { nodes, connections, selected, zoom, pan, addNode, moveNode, selectNode, clearSelection, setPan, setZoom } = useCanvasStore()
   const { selectAgent } = useUiStore()
-  const { activeAgents, completedPhases } = useSimulationStore()
+  const { activeAgents, completedPhases } = useOrchestrationStore()
 
   const [dragging, setDragging] = useState<{ nodeId: string; startX: number; startY: number; originX: number; originY: number } | null>(null)
   const [panning, setPanning] = useState<{ startX: number; startY: number; originX: number; originY: number } | null>(null)

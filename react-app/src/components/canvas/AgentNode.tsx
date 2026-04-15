@@ -3,9 +3,8 @@ import type { CanvasNode, Agent } from '../../types'
 import { AgentIcon } from '../primitives/AgentIcon'
 import { getAgentColor } from '../../data/agentColors'
 import { useUiStore } from '../../store/uiStore'
-import { useSimulationStore } from '../../store/simulationStore'
-import { useLLMStore } from '../../store/llmStore'
-
+import { usePipelineStore } from '../../store/pipelineStore'
+import { useLLMStore } from '../../store/llmStore'import { useReducedMotion } from '../../hooks/useReducedMotion'
 interface AgentNodeProps {
   node: CanvasNode
   agentDef: Agent
@@ -35,9 +34,8 @@ export const AgentNode: React.FC<AgentNodeProps> = ({
 }) => {
   const theme = useUiStore((s) => s.theme)
   const color = getAgentColor(agentDef.id, theme)
-  const { runAgentLLM } = useSimulationStore()
-  const { debugMode, apiKey } = useLLMStore()
-
+  const { runAgentLLM } = usePipelineStore()
+  const { debugMode, apiKey } = useLLMStore()  const reducedMotion = useReducedMotion()
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null)
 
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
@@ -100,8 +98,8 @@ export const AgentNode: React.FC<AgentNodeProps> = ({
           justifyContent: 'center',
           cursor: 'grab',
           userSelect: 'none',
-          transition: 'box-shadow 0.15s, border-color 0.15s',
-          animation: isActive ? 'breathe 1.5s ease-in-out infinite' : undefined,
+          transition: 'box-shadow 0.15s, border-color 0.15s, background 0.15s, opacity 0.2s',
+          animation: isActive && !reducedMotion ? 'breathe 1.5s ease-in-out infinite' : undefined,
           opacity: isCompleted ? 0.6 : 1,
         }}
       >
@@ -153,7 +151,7 @@ export const AgentNode: React.FC<AgentNodeProps> = ({
         )}
 
         {/* Active pulse ring */}
-        {isActive && (
+        {isActive && !reducedMotion && (
           <div
             className="absolute inset-[-4px] pointer-events-none"
             style={{
@@ -165,7 +163,7 @@ export const AgentNode: React.FC<AgentNodeProps> = ({
         )}
 
         {/* Tool activity indicator */}
-        {isActive && (
+        {isActive && !reducedMotion && (
           <div
             className="absolute pointer-events-none text-[8px]"
             style={{

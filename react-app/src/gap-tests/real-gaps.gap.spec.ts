@@ -23,7 +23,14 @@ describe('real gaps (intentional red tests)', () => {
     vi.doMock('../store/llmStore', () => ({ useLLMStore: { getState: () => llmState } }))
     vi.doMock('../store/canvasStore', () => ({ useCanvasStore: { getState: () => canvasState } }))
 
-    const { useSimulationStore } = await import('../store/simulationStore')
+    vi.doMock('../store/orchestrationStore', () => ({
+      useOrchestrationStore: { getState: () => ({ reset: vi.fn(), setActiveAgents: vi.fn(), completePhase: vi.fn(), activeAgents: [] }) },
+    }))
+    vi.doMock('../store/executionHistoryStore', () => ({
+      useExecutionHistoryStore: { getState: () => ({ addMessage: vi.fn(), addLogEntry: vi.fn(), updateLogEntry: vi.fn(), clearMessages: vi.fn(), setDebugPanelOpen: vi.fn() }), setState: vi.fn() },
+    }))
+
+    const { usePipelineStore } = await import('../store/pipelineStore')
 
     let resolveFirst: (() => void) | null = null
     callAgentMock
@@ -34,8 +41,8 @@ describe('real gaps (intentional red tests)', () => {
       )
       .mockResolvedValueOnce({ ok: true, text: 'done-2', latencyMs: 1 })
 
-    const p1 = useSimulationStore.getState().runPipelineLLM('task', canvasState.nodes, [])
-    const p2 = useSimulationStore.getState().runPipelineLLM('task', canvasState.nodes, [])
+    const p1 = usePipelineStore.getState().runPipelineLLM('task', canvasState.nodes, [])
+    const p2 = usePipelineStore.getState().runPipelineLLM('task', canvasState.nodes, [])
 
     const firstResolver = resolveFirst as (() => void) | null
     if (firstResolver) {

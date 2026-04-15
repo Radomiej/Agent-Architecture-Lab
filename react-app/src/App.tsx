@@ -17,7 +17,10 @@ import { MobileNav } from './components/layout/MobileNav'
 import { ErrorBoundary } from './components/primitives/ErrorBoundary'
 import { useUiStore } from './store/uiStore'
 import { useCanvasStore } from './store/canvasStore'
-import { useSimulationStore } from './store/simulationStore'
+import { useMockSimulationStore } from './store/mockSimulationStore'
+import { usePipelineStore } from './store/pipelineStore'
+import { useOrchestrationStore } from './store/orchestrationStore'
+import { useExecutionHistoryStore } from './store/executionHistoryStore'
 import { useVfsStore } from './store/vfsStore'
 import { useMcpStore } from './store/mcpStore'
 import { usePresetStore } from './store/presetStore'
@@ -37,20 +40,10 @@ function AppLayout() {
   useTheme()
   const { openModal, activeModal, closeModal, leftDrawerOpen, rightDrawerOpen, setLeftDrawer, setRightDrawer } = useUiStore()
   const { selected, removeNode, nodes } = useCanvasStore()
-  const {
-    toggleDebugPanel,
-    isRunning,
-    isPaused,
-    step,
-    nextStep,
-    setActiveAgents,
-    completePhase,
-    addMessage,
-    addToolCalls,
-    stop,
-    messages,
-    isPipelineRunning,
-  } = useSimulationStore()
+  const { toggleDebugPanel, addMessage, addToolCalls, messages } = useExecutionHistoryStore()
+  const { isRunning, isPaused, step, nextStep, stop } = useMockSimulationStore()
+  const { setActiveAgents, completePhase } = useOrchestrationStore()
+  const { isPipelineRunning } = usePipelineStore()
   const mcp = useMcpStore()
   const [toasts, setToasts] = useState<Array<{ id: string; message: string; type?: 'info' | 'success' | 'warn' | 'error' }>>([])
   const msgCursorRef = useRef(0)
@@ -286,10 +279,13 @@ function AppLayout() {
       {/* Mobile drawer: Left sidebar — stops above MobileNav (bottom-14), starts below TopBar (top-12) */}
       {leftDrawerOpen && (
         <>
+          {/* Full-screen dim — pointer-events:none so drawer items stay interactive */}
+          <div className="fixed inset-0 z-[44] bg-black/50 backdrop-blur-sm pointer-events-none md:hidden" />
+          {/* Clickable close area — only covers the portion to the RIGHT of the 288px drawer */}
           <div
             data-testid="left-drawer-backdrop"
             aria-label="Close menu"
-            className="fixed inset-x-0 top-0 bottom-14 z-[45] bg-black/50 backdrop-blur-sm md:hidden"
+            className="fixed top-0 bottom-14 left-72 right-0 z-[45] md:hidden"
             onClick={() => setLeftDrawer(false)}
           />
           <div
@@ -304,10 +300,13 @@ function AppLayout() {
       {/* Mobile drawer: Right sidebar — stops above MobileNav (bottom-14), starts below TopBar (top-12) */}
       {rightDrawerOpen && (
         <>
+          {/* Full-screen dim — pointer-events:none so drawer items stay interactive */}
+          <div className="fixed inset-0 z-[44] bg-black/50 backdrop-blur-sm pointer-events-none md:hidden" />
+          {/* Clickable close area — only covers the portion to the LEFT of the 320px drawer */}
           <div
             data-testid="right-drawer-backdrop"
             aria-label="Close menu"
-            className="fixed inset-x-0 top-0 bottom-14 z-[45] bg-black/50 backdrop-blur-sm md:hidden"
+            className="fixed top-0 bottom-14 left-0 right-80 z-[45] md:hidden"
             onClick={() => setRightDrawer(false)}
           />
           <div

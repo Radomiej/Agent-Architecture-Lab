@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useUiStore } from '../../store/uiStore'
-import { useSimulationStore } from '../../store/simulationStore'
+import { usePipelineStore } from '../../store/pipelineStore'
 import { useCanvasStore } from '../../store/canvasStore'
 import { AD_MAP } from '../../data/agents'
 
@@ -17,7 +17,7 @@ const PHASE_RANK: Record<string, number> = {
 export function TaskPromptModal() {
   const { t } = useTranslation()
   const { activeModal, closeModal } = useUiStore()
-  const { runPipelineLLM, isPipelineRunning } = useSimulationStore()
+  const { runPipelineLLM, isPipelineRunning } = usePipelineStore()
   const { nodes, connections } = useCanvasStore()
 
   const [task, setTask] = useState('')

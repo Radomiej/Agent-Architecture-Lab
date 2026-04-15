@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { useSimulationStore } from '../../store/simulationStore'
+import { useExecutionHistoryStore } from '../../store/executionHistoryStore'
 import type { LLMCallLog } from '../../types'
 
 const STATUS_COLOR: Record<LLMCallLog['status'], string> = {
@@ -101,11 +101,9 @@ const LogRow: React.FC<LogRowProps> = ({ entry }) => {
 }
 
 export const DebugPanel: React.FC = () => {
-  const { executionLog, debugPanelOpen, toggleDebugPanel } = useSimulationStore()
+  const { executionLog, debugPanelOpen, toggleDebugPanel, clearLog } = useExecutionHistoryStore()
 
   if (!debugPanelOpen) return null
-
-  const clearLog = () => useSimulationStore.setState({ executionLog: [] })
 
   return (
     <div
