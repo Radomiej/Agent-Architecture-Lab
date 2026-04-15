@@ -7,8 +7,10 @@ import {
   testWebSearchConnection,
   COMETAPI_BASE_URL,
   OPENROUTER_BASE_URL,
+  OPENAI_COMPATIBLE_BASE_URL,
   DEFAULT_MODEL_MAP,
   OPENROUTER_DEFAULT_MODEL_MAP,
+  OPENAI_COMPATIBLE_DEFAULT_MODEL_MAP,
   fetchModelCatalog,
   type ProviderModelCatalogItem,
 } from '../../services/llmService'
@@ -49,6 +51,11 @@ const MODEL_PRESETS: Record<LLMProvider, Partial<Record<ModelType, string[]>>> =
     opus:   ['anthropic/claude-opus-4-5', 'openai/gpt-4o', 'google/gemini-2.5-pro'],
     sonnet: ['anthropic/claude-sonnet-4-5', 'openai/gpt-4o-mini', 'mistralai/mistral-large'],
     haiku:  ['anthropic/claude-haiku-4-5', 'openai/gpt-4.1-mini', 'mistralai/mistral-small'],
+  },
+  'openai-compatible': {
+    opus:   ['gpt-4o', 'gpt-4.1', 'llama3.3:70b', 'deepseek-r1:70b'],
+    sonnet: ['gpt-4o-mini', 'gpt-4.1-mini', 'llama3.1:8b', 'qwen2.5:32b'],
+    haiku:  ['gpt-3.5-turbo', 'llama3.2:3b', 'mistral:7b', 'phi4:14b'],
   },
 }
 
@@ -276,7 +283,7 @@ const LLMSettingsContent: React.FC = () => {
   const llm = useLLMStore()
   const mcp = useMcpStore()
 
-  const [activeTab, setActiveTab] = useState<'llm' | 'tools'>('llm')
+  const [activeTab, setActiveTab] = useState<'llm' | 'tools' | 'groups'>('llm')
 
   // ── MCP Gateway state ───────────────────────────────────────────────────────
   const [mcpUrl, setMcpUrl] = useState(mcp.config.gatewayUrl)
@@ -299,6 +306,11 @@ const LLMSettingsContent: React.FC = () => {
       baseUrl: llm.providerConfigs.openrouter.baseUrl,
       modelMap: { ...llm.providerConfigs.openrouter.modelMap },
     },
+    'openai-compatible': {
+      apiKey: llm.providerConfigs['openai-compatible'].apiKey,
+      baseUrl: llm.providerConfigs['openai-compatible'].baseUrl,
+      modelMap: { ...llm.providerConfigs['openai-compatible'].modelMap },
+    },
   }))
   const apiKeyDraft = providerConfigsDraft[provider].apiKey
   const baseUrlDraft = providerConfigsDraft[provider].baseUrl
@@ -311,6 +323,7 @@ const LLMSettingsContent: React.FC = () => {
   const [catalogByProvider, setCatalogByProvider] = useState<Record<LLMProvider, CatalogState>>({
     cometapi: { loading: false, error: '', fromCache: false, models: [] },
     openrouter: { loading: false, error: '', fromCache: false, models: [] },
+    'openai-compatible': { loading: false, error: '', fromCache: false, models: [] },
   })
 
   // ── Web Search Tool state ───────────────────────────────────────────────────
@@ -403,6 +416,11 @@ const LLMSettingsContent: React.FC = () => {
         baseUrl: OPENROUTER_BASE_URL,
         modelMap: { ...OPENROUTER_DEFAULT_MODEL_MAP },
       },
+      'openai-compatible': {
+        apiKey: getEnvApiKey('openai-compatible'),
+        baseUrl: OPENAI_COMPATIBLE_BASE_URL,
+        modelMap: { ...OPENAI_COMPATIBLE_DEFAULT_MODEL_MAP },
+      },
     }
     const freshWS = getEnvWebSearchConfig()
     setProviderDraft(freshProvider)
@@ -412,6 +430,7 @@ const LLMSettingsContent: React.FC = () => {
     setCatalogByProvider({
       cometapi: { loading: false, error: '', fromCache: false, models: [] },
       openrouter: { loading: false, error: '', fromCache: false, models: [] },
+      'openai-compatible': { loading: false, error: '', fromCache: false, models: [] },
     })
     setWsEnabled(freshWS.enabled)
     setWsProvider(freshWS.provider)
@@ -478,7 +497,8 @@ const LLMSettingsContent: React.FC = () => {
       {/* ── Tab bar ──────────────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', padding: '0 4px', flexShrink: 0 }}>
         <TabBtn label="🤖 LLM Settings" active={activeTab === 'llm'} onClick={() => setActiveTab('llm')} />
-        <TabBtn label="🔧 Tool Settings" active={activeTab === 'tools'} onClick={() => setActiveTab('tools')} />
+        <TabBtn label="🔧 Tool Sources" active={activeTab === 'tools'} onClick={() => setActiveTab('tools')} />
+        <TabBtn label="📦 Tool Groups" active={activeTab === 'groups'} onClick={() => setActiveTab('groups')} />
       </div>
 
       {/* ── Scrollable body ───────────────────────────────────────────────────── */}
@@ -492,8 +512,8 @@ const LLMSettingsContent: React.FC = () => {
         <div style={sectionTitleStyle}>🤖 LLM Provider — for agents</div>
 
         {/* Provider selector */}
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
-          {(['cometapi', 'openrouter'] as LLMProvider[]).map((p) => (
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
+          {(['cometapi', 'openrouter', 'openai-compatible'] as LLMProvider[]).map((p) => (
             <button
               key={p}
               type="button"
@@ -506,7 +526,7 @@ const LLMSettingsContent: React.FC = () => {
                 fontWeight: provider === p ? 700 : 400,
               }}
             >
-              {p === 'cometapi' ? '☄️ CometAPI' : '🔀 OpenRouter'}
+              {p === 'cometapi' ? '☄️ CometAPI' : p === 'openrouter' ? '🔀 OpenRouter' : '🔌 OpenAI Compatible'}
             </button>
           ))}
         </div>
@@ -525,6 +545,11 @@ const LLMSettingsContent: React.FC = () => {
             <a href="https://cometapi.com" target="_blank" rel="noreferrer" style={{ color: '#A78BFA' }}>Get key ↗</a>
           </p>
         )}
+        {provider === 'openai-compatible' && (
+          <p style={{ ...hintStyle, marginBottom: '12px', color: 'var(--t3)' }}>
+            Any OpenAI-compatible endpoint — Ollama, LM Studio, vLLM, LocalAI, your own proxy, etc. Set Base URL to your server and Model IDs to whatever your endpoint exposes. Leave API Key empty for unauthenticated local servers.
+          </p>
+        )}
         <p style={{ ...hintStyle, marginBottom: '12px' }}>
           If <code>.env</code> contains provider keys, they are loaded here automatically. Saving an empty field falls back to the env value.
         </p>
@@ -539,8 +564,8 @@ const LLMSettingsContent: React.FC = () => {
               updateProviderDraft(provider, (current) => ({ ...current, apiKey: e.target.value }))
               setTestState('idle')
             }}
-            placeholder={provider === 'openrouter' ? 'sk-or-…' : 'sk-…'}
-            aria-label="CometAPI key"
+            placeholder={provider === 'openrouter' ? 'sk-or-…' : provider === 'openai-compatible' ? 'sk-… or leave empty' : 'sk-…'}
+            aria-label="API key"
             style={inputStyle}
           />
           <button type="button" onClick={() => setShowKey((v) => !v)} style={iconBtnStyle} aria-label={showKey ? 'Hide key' : 'Show key'}>
@@ -897,8 +922,12 @@ const LLMSettingsContent: React.FC = () => {
           </div>
         </div>
       </div>
-          title="Removes API keys and model settings saved in this browser"
-      {/* SECTION B — Tool Groups */}
+      </>}
+
+      {/* ═══════════════════════════════ GROUPS TAB ══════════════════════════════ */}
+      {activeTab === 'groups' && <>
+
+      {/* Tool Groups */}
       <div style={sectionBoxStyle}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '4px' }}>
           <div style={sectionTitleStyle}>📦 Tool Groups</div>

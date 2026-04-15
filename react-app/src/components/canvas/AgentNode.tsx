@@ -4,7 +4,8 @@ import { AgentIcon } from '../primitives/AgentIcon'
 import { getAgentColor } from '../../data/agentColors'
 import { useUiStore } from '../../store/uiStore'
 import { usePipelineStore } from '../../store/pipelineStore'
-import { useLLMStore } from '../../store/llmStore'import { useReducedMotion } from '../../hooks/useReducedMotion'
+import { useLLMStore } from '../../store/llmStore'
+import { useReducedMotion } from '../../hooks/useReducedMotion'
 interface AgentNodeProps {
   node: CanvasNode
   agentDef: Agent
@@ -35,7 +36,8 @@ export const AgentNode: React.FC<AgentNodeProps> = ({
   const theme = useUiStore((s) => s.theme)
   const color = getAgentColor(agentDef.id, theme)
   const { runAgentLLM } = usePipelineStore()
-  const { debugMode, apiKey } = useLLMStore()  const reducedMotion = useReducedMotion()
+  const { debugMode, apiKey } = useLLMStore()
+  const reducedMotion = useReducedMotion()
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null)
 
   const handleContextMenu = useCallback((e: React.MouseEvent) => {

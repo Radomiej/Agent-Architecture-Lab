@@ -168,7 +168,7 @@ export interface CtxResult {
   pct: number
 }
 
-export type LLMProvider = 'cometapi' | 'openrouter'
+export type LLMProvider = 'cometapi' | 'openrouter' | 'openai-compatible'
 
 export interface LLMConfig {
   provider: LLMProvider

@@ -5,6 +5,8 @@ import type { ModelType, WebSearchConfig, SonarModelId } from '../types'
 export const COMETAPI_BASE_URL = 'https://api.cometapi.com/v1'
 export const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1'
 export const PERPLEXITY_BASE_URL = 'https://api.perplexity.ai'
+/** Default base URL for OpenAI-compatible endpoints (e.g. Ollama, LM Studio, vLLM, custom) */
+export const OPENAI_COMPATIBLE_BASE_URL = 'http://localhost:11434/v1'
 
 /** OpenRouter requires these headers for attribution */
 const OPENROUTER_HEADERS = {
@@ -24,6 +26,13 @@ export const OPENROUTER_DEFAULT_MODEL_MAP: Record<ModelType, string> = {
   opus: 'anthropic/claude-opus-4-5',
   sonnet: 'anthropic/claude-sonnet-4-5',
   haiku: 'anthropic/claude-haiku-4-5',
+}
+
+/** Default model IDs for OpenAI-compatible endpoints (generic placeholders) */
+export const OPENAI_COMPATIBLE_DEFAULT_MODEL_MAP: Record<ModelType, string> = {
+  opus: 'gpt-4o',
+  sonnet: 'gpt-4o-mini',
+  haiku: 'gpt-3.5-turbo',
 }
 
 /** Resolve model ID for a given OpenRouter Sonar model */

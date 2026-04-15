@@ -1,6 +1,6 @@
 import { DEFAULT_WEB_SEARCH_CONFIG, SONAR_MODELS, type LLMProvider, type SonarModelId, type WebSearchConfig, type WebSearchProvider } from '../types'
 
-const VALID_LLM_PROVIDERS: readonly LLMProvider[] = ['cometapi', 'openrouter']
+const VALID_LLM_PROVIDERS: readonly LLMProvider[] = ['cometapi', 'openrouter', 'openai-compatible']
 const VALID_WEB_SEARCH_PROVIDERS: readonly WebSearchProvider[] = ['perplexity', 'openrouter']
 const VALID_SONAR_MODELS = new Set<SonarModelId>(SONAR_MODELS.map(({ id }) => id))
 
@@ -35,9 +35,9 @@ function parseSonarModel(value: string | undefined): SonarModelId | undefined {
 }
 
 export function getEnvApiKey(provider: LLMProvider): string {
-  return provider === 'openrouter'
-    ? readEnv('VITE_OPENROUTER_API_KEY') ?? ''
-    : readEnv('VITE_COMETAPI_API_KEY') ?? ''
+  if (provider === 'openrouter') return readEnv('VITE_OPENROUTER_API_KEY') ?? ''
+  if (provider === 'openai-compatible') return readEnv('VITE_OPENAI_COMPATIBLE_API_KEY') ?? ''
+  return readEnv('VITE_COMETAPI_API_KEY') ?? ''
 }
 
 export function getDefaultLLMProvider(): LLMProvider {

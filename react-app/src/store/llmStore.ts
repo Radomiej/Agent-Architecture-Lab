@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { ModelType, LLMConfig, LLMProvider, WebSearchConfig } from '../types'
-import { DEFAULT_MODEL_MAP, OPENROUTER_DEFAULT_MODEL_MAP, COMETAPI_BASE_URL, OPENROUTER_BASE_URL } from '../services/llmService'
+import { DEFAULT_MODEL_MAP, OPENROUTER_DEFAULT_MODEL_MAP, OPENAI_COMPATIBLE_DEFAULT_MODEL_MAP, COMETAPI_BASE_URL, OPENROUTER_BASE_URL, OPENAI_COMPATIBLE_BASE_URL } from '../services/llmService'
 import { DEFAULT_WEB_SEARCH_CONFIG } from '../types'
 import { getDefaultLLMProvider, getEnvApiKey, getEnvWebSearchApiKey, getEnvWebSearchConfig } from '../utils/env'
 
@@ -13,7 +13,9 @@ function normalizeStoredText(value: string | undefined): string | undefined {
 }
 
 function normalizeProvider(value: string | undefined): LLMProvider {
-  return value === 'openrouter' ? 'openrouter' : 'cometapi'
+  if (value === 'openrouter') return 'openrouter'
+  if (value === 'openai-compatible') return 'openai-compatible'
+  return 'cometapi'
 }
 
 function normalizeWebSearchProvider(value: string | undefined): WebSearchConfig['provider'] {
@@ -29,13 +31,15 @@ function normalizeSonarModel(value: string | undefined): WebSearchConfig['model'
 // ─── LLM Provider ─────────────────────────────────────────────────────────────
 
 function defaultModelMap(provider: LLMProvider): Record<ModelType, string> {
-  return provider === 'openrouter'
-    ? { ...OPENROUTER_DEFAULT_MODEL_MAP }
-    : { ...DEFAULT_MODEL_MAP }
+  if (provider === 'openrouter') return { ...OPENROUTER_DEFAULT_MODEL_MAP }
+  if (provider === 'openai-compatible') return { ...OPENAI_COMPATIBLE_DEFAULT_MODEL_MAP }
+  return { ...DEFAULT_MODEL_MAP }
 }
 
 function defaultBaseUrl(provider: LLMProvider): string {
-  return provider === 'openrouter' ? OPENROUTER_BASE_URL : COMETAPI_BASE_URL
+  if (provider === 'openrouter') return OPENROUTER_BASE_URL
+  if (provider === 'openai-compatible') return OPENAI_COMPATIBLE_BASE_URL
+  return COMETAPI_BASE_URL
 }
 
 interface ProviderLLMConfig {
@@ -44,7 +48,7 @@ interface ProviderLLMConfig {
   modelMap: Record<ModelType, string>
 }
 
-type ProviderConfigMap = Record<LLMProvider, ProviderLLMConfig>
+type ProviderConfigMap = Record<'cometapi' | 'openrouter' | 'openai-compatible', ProviderLLMConfig>
 
 interface PersistedLLMConfig {
   provider?: string
@@ -52,7 +56,7 @@ interface PersistedLLMConfig {
   baseUrl?: string
   modelMap?: Partial<Record<ModelType, string>>
   debugMode?: boolean
-  providers?: Partial<Record<LLMProvider, {
+  providers?: Partial<Record<'cometapi' | 'openrouter' | 'openai-compatible', {
     apiKey?: string
     baseUrl?: string
     modelMap?: Partial<Record<ModelType, string>>
@@ -84,11 +88,13 @@ function loadConfig(): LoadedLLMState {
       const providerConfigs: ProviderConfigMap = {
         cometapi: makeProviderProfile('cometapi'),
         openrouter: makeProviderProfile('openrouter'),
+        'openai-compatible': makeProviderProfile('openai-compatible'),
       }
 
       if (parsed.providers) {
         providerConfigs.cometapi = makeProviderProfile('cometapi', parsed.providers.cometapi)
         providerConfigs.openrouter = makeProviderProfile('openrouter', parsed.providers.openrouter)
+        providerConfigs['openai-compatible'] = makeProviderProfile('openai-compatible', (parsed.providers as Record<string, { apiKey?: string; baseUrl?: string; modelMap?: Partial<Record<ModelType, string>> } | undefined>)['openai-compatible'])
       } else {
         // Legacy migration: single provider config becomes snapshot for that provider.
         providerConfigs[provider] = makeProviderProfile(provider, {
@@ -114,6 +120,7 @@ function loadConfig(): LoadedLLMState {
   const providerConfigs: ProviderConfigMap = {
     cometapi: makeProviderProfile('cometapi'),
     openrouter: makeProviderProfile('openrouter'),
+    'openai-compatible': makeProviderProfile('openai-compatible'),
   }
 
   return {
@@ -174,6 +181,7 @@ function saveConfig(cfg: { provider: LLMProvider; debugMode: boolean; providerCo
     providers: {
       cometapi: persistProvider('cometapi'),
       openrouter: persistProvider('openrouter'),
+      'openai-compatible': persistProvider('openai-compatible'),
     },
   }
 
@@ -315,6 +323,7 @@ export const useLLMStore = create<LLMStore>((set, get) => ({
     const nextConfigs: ProviderConfigMap = {
       cometapi: sanitizeProviderConfig('cometapi', configs.cometapi),
       openrouter: sanitizeProviderConfig('openrouter', configs.openrouter),
+      'openai-compatible': sanitizeProviderConfig('openai-compatible', configs['openai-compatible']),
     }
     const active = nextConfigs[provider]
     const next = {
@@ -350,6 +359,7 @@ export const useLLMStore = create<LLMStore>((set, get) => ({
     const providerConfigs: ProviderConfigMap = {
       cometapi: makeProviderProfile('cometapi'),
       openrouter: makeProviderProfile('openrouter'),
+      'openai-compatible': makeProviderProfile('openai-compatible'),
     }
     const active = providerConfigs[provider]
     const freshLLM: LLMConfig = {
