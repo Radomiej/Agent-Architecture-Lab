@@ -1,10 +1,10 @@
 import React, { useState } from 'react'
 import { useUiStore } from '../../store/uiStore'
 import { useLLMStore } from '../../store/llmStore'
-import { testConnection, testWebSearchConnection, COMETAPI_BASE_URL, OPENROUTER_BASE_URL } from '../../services/llmService'
+import { testConnection, testWebSearchConnection, COMETAPI_BASE_URL, OPENROUTER_BASE_URL, DEFAULT_MODEL_MAP, OPENROUTER_DEFAULT_MODEL_MAP } from '../../services/llmService'
 import type { ModelType, LLMProvider, WebSearchProvider, SonarModelId } from '../../types'
 import { SONAR_MODELS } from '../../types'
-import { getEnvApiKey, getEnvWebSearchApiKey } from '../../utils/env'
+import { getEnvApiKey, getEnvWebSearchApiKey, getEnvWebSearchConfig, getDefaultLLMProvider } from '../../utils/env'
 import { ModalBase } from './ModalBase'
 
 const MODEL_TIERS: ModelType[] = ['opus', 'sonnet', 'haiku']
@@ -79,6 +79,27 @@ const LLMSettingsContent: React.FC = () => {
     llm.setConfig({ provider, apiKey: apiKeyDraft, baseUrl: baseUrlDraft, modelMap: modelMapDraft, debugMode: debugDraft })
     llm.setWebSearch({ enabled: wsEnabled, provider: wsProvider, apiKey: wsKey, model: wsModel })
     closeModal()
+  }
+
+  const handleClearData = () => {
+    llm.clearPersistedData()
+    const freshProvider = getDefaultLLMProvider()
+    const freshBaseUrl = freshProvider === 'openrouter' ? OPENROUTER_BASE_URL : COMETAPI_BASE_URL
+    const freshModelMap = freshProvider === 'openrouter' ? { ...OPENROUTER_DEFAULT_MODEL_MAP } : { ...DEFAULT_MODEL_MAP }
+    const freshWS = getEnvWebSearchConfig()
+    setProviderDraft(freshProvider)
+    setApiKeyDraft(getEnvApiKey(freshProvider))
+    setBaseUrlDraft(freshBaseUrl)
+    setModelMapDraft(freshModelMap)
+    setDebugDraft(false)
+    setWsEnabled(freshWS.enabled)
+    setWsProvider(freshWS.provider)
+    setWsKey(freshWS.apiKey)
+    setWsModel(freshWS.model)
+    setTestState('idle')
+    setTestError('')
+    setWsTestState('idle')
+    setWsTestError('')
   }
 
   const handleTest = async () => {
@@ -357,7 +378,16 @@ const LLMSettingsContent: React.FC = () => {
       </div>
 
       {/* ── Global actions ──────────────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <button
+          type="button"
+          onClick={handleClearData}
+          title="Removes API keys and model settings saved in this browser"
+          style={{ ...btnStyle, background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.3)', color: '#F87171', cursor: 'pointer' }}
+        >
+          🗑 Clear saved data
+        </button>
+        <div style={{ flex: 1 }} />
         <button type="button" onClick={closeModal} style={{ ...btnStyle, background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--t2)', cursor: 'pointer' }}>
           Cancel
         </button>

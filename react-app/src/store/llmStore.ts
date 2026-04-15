@@ -122,6 +122,9 @@ interface LLMStore extends LLMConfig {
   // Web Search Tool (separate concept)
   webSearch: WebSearchConfig
   setWebSearch: (ws: Partial<WebSearchConfig>) => void
+
+  // Persistence
+  clearPersistedData: () => void
 }
 
 const initialLLM = loadConfig()
@@ -197,5 +200,20 @@ export const useLLMStore = create<LLMStore>((set, get) => ({
     }
     saveWebSearch(next)
     set({ webSearch: next })
+  },
+
+  clearPersistedData: () => {
+    try { localStorage.removeItem(LS_KEY) } catch { /* ignore */ }
+    try { localStorage.removeItem(LS_WS_KEY) } catch { /* ignore */ }
+    const provider = getDefaultLLMProvider()
+    const freshLLM: LLMConfig = {
+      provider,
+      apiKey: getEnvApiKey(provider),
+      baseUrl: defaultBaseUrl(provider),
+      modelMap: { ...defaultModelMap(provider) },
+      debugMode: false,
+    }
+    const freshWS = getEnvWebSearchConfig()
+    set({ ...freshLLM, webSearch: freshWS })
   },
 }))
