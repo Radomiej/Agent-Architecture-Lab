@@ -46,7 +46,7 @@ test.describe('LLM Settings Modal', () => {
     const keyInput = dialog.getByRole('textbox', { name: /CometAPI key/i })
     await keyInput.fill('sk-test-key-12345')
 
-    await dialog.getByRole('button', { name: /Save/i }).click()
+    await dialog.getByRole('button', { name: 'Save', exact: true }).click()
 
     // Modal closes after save
     await expect(dialog).toHaveCount(0)
@@ -78,7 +78,7 @@ test.describe('LLM Settings Modal', () => {
     const dialog = page.getByRole('dialog', { name: /LLM Settings/i })
 
     await dialog.getByRole('textbox', { name: /CometAPI key/i }).fill('sk-test-key-99999')
-    await dialog.getByRole('button', { name: /Save/i }).click()
+    await dialog.getByRole('button', { name: 'Save', exact: true }).click()
 
     // LLM ✓ badge should appear in the TopBar
     await expect(page.getByRole('banner')).toContainText('LLM')

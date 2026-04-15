@@ -163,22 +163,26 @@ function AppLayout() {
 
   useEffect(() => {
     if (messages.length <= msgCursorRef.current) return
-    const latest = messages[messages.length - 1]
-    if (!latest) return
+    const startIndex = msgCursorRef.current
+    const newMessages = messages.slice(startIndex)
+    if (newMessages.length === 0) return
     msgCursorRef.current = messages.length
 
-    const agentName = AD_MAP.get(latest.agentId)?.name ?? latest.agentId
-    const preview = latest.text.length > 88 ? `${latest.text.slice(0, 88)}...` : latest.text
-    const type: 'info' | 'success' = latest.text.startsWith('Symulacja zakonczona') ? 'success' : 'info'
+    setToasts((prev) => {
+      const nextToasts = newMessages.map((message, idx) => {
+        const agentName = AD_MAP.get(message.agentId)?.name ?? message.agentId
+        const preview = message.text.length > 88 ? `${message.text.slice(0, 88)}...` : message.text
+        const type: 'info' | 'success' = message.text.startsWith('Symulacja zakonczona') ? 'success' : 'info'
 
-    setToasts((prev) => [
-      ...prev.slice(-2),
-      {
-        id: `${latest.timestamp}-${messages.length}`,
-        message: `${agentName}: ${preview}`,
-        type,
-      },
-    ])
+        return {
+          id: `${message.timestamp}-${startIndex + idx}`,
+          message: `${agentName}: ${preview}`,
+          type,
+        }
+      })
+
+      return [...prev, ...nextToasts].slice(-3)
+    })
   }, [messages])
 
   // Global keyboard shortcuts
