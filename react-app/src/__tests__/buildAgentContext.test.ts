@@ -220,6 +220,6 @@ describe('buildAgentContext', () => {
       connections: [],
       agentMap: makeAgentMap(ORCHESTRATOR),
     })
-    expect(result).toContain('max 300 words')
+    expect(result).toContain('Be thorough but structured.')
   })
 })
