@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useUiStore } from '../../store/uiStore'
 import { AD_MAP } from '../../data/agents'
@@ -9,6 +9,8 @@ import { ModelBadge } from '../primitives/ModelBadge'
 import { VerdictPanel } from '../primitives/VerdictPanel'
 import { getAgentColor, getPresetColor } from '../../data/agentColors'
 import { useSimulationStore } from '../../store/simulationStore'
+import { useMcpStore } from '../../store/mcpStore'
+import { getAgentToolTokens } from '../../utils/resolveAgentTools'
 
 export const RightSidebar: React.FC = () => {
   const { selectedAgentId, selectedPresetId, theme, openModal } = useUiStore()
@@ -90,16 +92,7 @@ const AgentDetail: React.FC<{ id: string; theme: 'dark' | 'light' }> = ({ id, th
         </Section>
       )}
 
-      {/* Tools */}
-      <Section label={t('sidebar.tools')}>
-        <div className="flex flex-wrap gap-1">
-          {agent.tools.split(',').map((tool) => (
-            <span key={tool.trim()} className="px-2 py-0.5 rounded text-[11px]" style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--t2)' }}>
-              {tool.trim()}
-            </span>
-          ))}
-        </div>
-      </Section>
+      <AgentToolsSection agentId={id} baseTools={agent.tools} />
 
       {/* Verdict panel: when to use / when not to use */}
       {(green.length > 0 || red.length > 0) && (
@@ -109,6 +102,173 @@ const AgentDetail: React.FC<{ id: string; theme: 'dark' | 'light' }> = ({ id, th
           greenLabel={t('sidebar.whenToUse')}
           redLabel={t('sidebar.whenNotToUse')}
         />
+      )}
+    </div>
+  )
+}
+
+const AgentToolsSection: React.FC<{ agentId: string; baseTools: string }> = ({ agentId, baseTools }) => {
+  const mcp = useMcpStore()
+  const [editing, setEditing] = useState(false)
+  const [draftTool, setDraftTool] = useState('')
+
+  const groupNames = useMemo(() => new Set(mcp.toolGroups.map((group) => group.name)), [mcp.toolGroups])
+  const tools = useMemo(
+    () => getAgentToolTokens(agentId, baseTools, mcp.agentToolOverrides),
+    [agentId, baseTools, mcp.agentToolOverrides],
+  )
+  const hasOverride = agentId in mcp.agentToolOverrides
+
+  const addTool = (tool: string) => {
+    const trimmed = tool.trim()
+    if (!trimmed) return
+    if (tools.includes(trimmed)) {
+      setDraftTool('')
+      return
+    }
+    mcp.setAgentTools(agentId, [...tools, trimmed])
+    setDraftTool('')
+  }
+
+  const removeTool = (tool: string) => {
+    mcp.setAgentTools(agentId, tools.filter((current) => current !== tool))
+  }
+
+  return (
+    <div className="mb-3">
+      <div className="flex items-center justify-between mb-1.5">
+        <div className="flex items-center gap-2">
+          <div className="text-[10px] font-bold uppercase tracking-[0.06em]" style={{ color: 'var(--t4)' }}>
+            Tools
+          </div>
+          {hasOverride && (
+            <span className="px-1.5 py-px rounded text-[9px] font-bold uppercase" style={{ color: '#34D399', background: 'rgba(52,211,153,0.12)', border: '1px solid rgba(52,211,153,0.25)' }}>
+              edited
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-1">
+          {hasOverride && editing && (
+            <button
+              type="button"
+              onClick={() => mcp.resetAgentTools(agentId)}
+              className="px-1.5 py-0.5 rounded text-[10px]"
+              style={{ color: '#F87171', background: 'rgba(248,113,113,0.12)', border: '1px solid rgba(248,113,113,0.25)' }}
+            >
+              Reset
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setEditing((v) => !v)}
+            className="px-1.5 py-0.5 rounded text-[10px]"
+            style={{ color: editing ? '#A78BFA' : 'var(--t3)', background: 'var(--bg-input)', border: '1px solid var(--border)' }}
+          >
+            {editing ? 'Done' : 'Edit'}
+          </button>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-1">
+        {tools.length === 0 && (
+          <span className="text-[11px]" style={{ color: 'var(--t4)' }}>No tools configured</span>
+        )}
+        {tools.map((tool) => {
+          const isGroup = groupNames.has(tool)
+          const bg = isGroup ? 'rgba(167,139,250,0.12)' : 'var(--bg-input)'
+          const border = isGroup ? '1px solid rgba(167,139,250,0.35)' : '1px solid var(--border)'
+          const color = isGroup ? '#C4B5FD' : 'var(--t2)'
+          return (
+            <span key={tool} className="px-2 py-0.5 rounded text-[11px] inline-flex items-center gap-1" style={{ background: bg, border, color }}>
+              {isGroup ? 'Group:' : ''} {tool}
+              {editing && (
+                <button
+                  type="button"
+                  onClick={() => removeTool(tool)}
+                  className="text-[10px] leading-none"
+                  style={{ color, opacity: 0.85 }}
+                  aria-label={`Remove ${tool}`}
+                >
+                  x
+                </button>
+              )}
+            </span>
+          )
+        })}
+      </div>
+
+      {editing && (
+        <div className="mt-2 flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <input
+              value={draftTool}
+              onChange={(e) => setDraftTool(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  addTool(draftTool)
+                }
+              }}
+              placeholder="Add tool or group token"
+              style={{
+                flex: 1,
+                background: 'var(--bg-input)',
+                border: '1px solid var(--border)',
+                borderRadius: '6px',
+                color: 'var(--t1)',
+                fontSize: '12px',
+                padding: '6px 8px',
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => addTool(draftTool)}
+              className="px-2 py-1 rounded text-[11px]"
+              style={{ color: '#34D399', background: 'rgba(52,211,153,0.12)', border: '1px solid rgba(52,211,153,0.25)' }}
+            >
+              Add
+            </button>
+          </div>
+
+          {mcp.toolGroups.length > 0 && (
+            <div>
+              <div className="text-[10px] uppercase mb-1" style={{ color: 'var(--t4)' }}>Tool groups</div>
+              <div className="flex flex-wrap gap-1">
+                {mcp.toolGroups.map((group) => (
+                  <button
+                    key={group.id}
+                    type="button"
+                    onClick={() => addTool(group.name)}
+                    className="px-2 py-0.5 rounded text-[11px]"
+                    style={{ color: '#C4B5FD', background: 'rgba(167,139,250,0.12)', border: '1px solid rgba(167,139,250,0.35)' }}
+                  >
+                    Group: {group.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {mcp.tools.length > 0 && (
+            <div>
+              <div className="text-[10px] uppercase mb-1" style={{ color: 'var(--t4)' }}>MCP tools</div>
+              <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
+                {mcp.tools.map((tool) => (
+                  <button
+                    key={tool.name}
+                    type="button"
+                    onClick={() => addTool(tool.name)}
+                    className="px-2 py-0.5 rounded text-[11px]"
+                    style={{ color: '#34D399', background: 'rgba(52,211,153,0.12)', border: '1px solid rgba(52,211,153,0.25)' }}
+                    title={tool.description ?? tool.name}
+                  >
+                    {tool.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       )}
     </div>
   )

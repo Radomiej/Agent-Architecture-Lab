@@ -262,3 +262,9 @@ export interface ToolCall {
   timestamp: number
   status: 'ok' | 'error'
 }
+
+export interface McpToolGroup {
+  id: string
+  name: string
+  toolNames: string[]
+}

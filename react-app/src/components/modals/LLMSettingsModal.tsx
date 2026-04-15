@@ -3,7 +3,7 @@ import { useUiStore } from '../../store/uiStore'
 import { useLLMStore } from '../../store/llmStore'
 import { useMcpStore } from '../../store/mcpStore'
 import { testConnection, testWebSearchConnection, COMETAPI_BASE_URL, OPENROUTER_BASE_URL, DEFAULT_MODEL_MAP, OPENROUTER_DEFAULT_MODEL_MAP } from '../../services/llmService'
-import type { ModelType, LLMProvider, WebSearchProvider, SonarModelId } from '../../types'
+import type { ModelType, LLMProvider, WebSearchProvider, SonarModelId, McpToolGroup } from '../../types'
 import { SONAR_MODELS } from '../../types'
 import { getEnvApiKey, getEnvWebSearchApiKey, getEnvWebSearchConfig, getDefaultLLMProvider } from '../../utils/env'
 import { ModalBase } from './ModalBase'
@@ -43,6 +43,9 @@ const LLMSettingsContent: React.FC = () => {
   const [mcpToken, setMcpToken] = useState(mcp.config.bearerToken)
   const [mcpEnabled, setMcpEnabled] = useState(mcp.config.enabled)
   const [showMcpToken, setShowMcpToken] = useState(false)
+  const [mcpToolGroupsDraft, setMcpToolGroupsDraft] = useState<McpToolGroup[]>(mcp.toolGroups)
+  const [groupNameDraft, setGroupNameDraft] = useState('')
+  const [groupToolsDraft, setGroupToolsDraft] = useState('')
 
   // ── LLM Provider state ──────────────────────────────────────────────────────
   const [provider, setProviderDraft] = useState<LLMProvider>(llm.provider)
@@ -88,6 +91,7 @@ const LLMSettingsContent: React.FC = () => {
     llm.setWebSearch({ enabled: wsEnabled, provider: wsProvider, apiKey: wsKey, model: wsModel })
     // Save MCP config; (dis)connect based on enabled toggle
     mcp.setConfig({ gatewayUrl: mcpUrl, bearerToken: mcpToken, enabled: mcpEnabled })
+    mcp.setToolGroups(mcpToolGroupsDraft)
     if (mcpEnabled) {
       void mcp.connect()
     } else {
@@ -129,6 +133,38 @@ const LLMSettingsContent: React.FC = () => {
     const result = await testWebSearchConnection({ provider: wsProvider, apiKey: wsKey })
     setWsTestState(result.ok ? 'ok' : 'error')
     if (!result.ok) setWsTestError(result.error ?? 'Unknown error')
+  }
+
+  const parseGroupTools = (raw: string): string[] =>
+    Array.from(new Set(raw.split(',').map((tool) => tool.trim()).filter(Boolean)))
+
+  const addGroup = () => {
+    const name = groupNameDraft.trim()
+    if (!name) return
+    const nextGroup: McpToolGroup = {
+      id: `grp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      name,
+      toolNames: parseGroupTools(groupToolsDraft),
+    }
+    setMcpToolGroupsDraft((groups) => [...groups, nextGroup])
+    setGroupNameDraft('')
+    setGroupToolsDraft('')
+  }
+
+  const removeGroup = (id: string) => {
+    setMcpToolGroupsDraft((groups) => groups.filter((group) => group.id !== id))
+  }
+
+  const updateGroupName = (id: string, name: string) => {
+    setMcpToolGroupsDraft((groups) => groups.map((group) => (
+      group.id === id ? { ...group, name } : group
+    )))
+  }
+
+  const updateGroupTools = (id: string, toolsRaw: string) => {
+    setMcpToolGroupsDraft((groups) => groups.map((group) => (
+      group.id === id ? { ...group, toolNames: parseGroupTools(toolsRaw) } : group
+    )))
   }
 
   const testLabel = (s: TestState) =>
@@ -498,6 +534,96 @@ const LLMSettingsContent: React.FC = () => {
               </div>
             </details>
           )}
+
+          <div style={{ borderTop: '1px solid var(--border)', paddingTop: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ ...labelStyle, marginBottom: 0 }}>MCP Tool Groups</div>
+            <p style={hintStyle}>
+              Assign MCP tools into named groups. Add group token name to an agent tools list to attach all tools from that group.
+            </p>
+
+            {mcpToolGroupsDraft.length === 0 && (
+              <div style={{ fontSize: '11px', color: 'var(--t4)' }}>No tool groups yet.</div>
+            )}
+
+            {mcpToolGroupsDraft.map((group) => (
+              <div key={group.id} style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: '8px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <input
+                    value={group.name}
+                    onChange={(e) => updateGroupName(group.id, e.target.value)}
+                    placeholder="group name (e.g. webtool)"
+                    style={{ ...inputStyle, fontSize: '12px' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeGroup(group.id)}
+                    style={{ ...btnStyle, padding: '6px 10px', fontSize: '11px', background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.3)', color: '#F87171', cursor: 'pointer' }}
+                  >
+                    Remove
+                  </button>
+                </div>
+
+                <input
+                  value={group.toolNames.join(', ')}
+                  onChange={(e) => updateGroupTools(group.id, e.target.value)}
+                  placeholder="toolA, toolB, toolC"
+                  style={{ ...inputStyle, fontSize: '12px' }}
+                />
+
+                {mcp.tools.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                    {mcp.tools.map((tool) => (
+                      <button
+                        key={`${group.id}-${tool.name}`}
+                        type="button"
+                        onClick={() => {
+                          const next = Array.from(new Set([...group.toolNames, tool.name]))
+                          setMcpToolGroupsDraft((groups) => groups.map((g) => g.id === group.id ? { ...g, toolNames: next } : g))
+                        }}
+                        style={{
+                          padding: '2px 7px',
+                          borderRadius: '4px',
+                          fontSize: '11px',
+                          background: group.toolNames.includes(tool.name) ? 'rgba(52,211,153,0.16)' : 'rgba(52,211,153,0.08)',
+                          border: `1px solid ${group.toolNames.includes(tool.name) ? 'rgba(52,211,153,0.45)' : 'rgba(52,211,153,0.2)'}`,
+                          color: '#34D399',
+                          fontFamily: 'var(--ff-mono)',
+                          cursor: 'pointer',
+                        }}
+                        title={tool.description}
+                      >
+                        {tool.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+
+            <div style={{ background: 'var(--bg-input)', border: '1px dashed var(--border)', borderRadius: '8px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <input
+                value={groupNameDraft}
+                onChange={(e) => setGroupNameDraft(e.target.value)}
+                placeholder="new group name"
+                style={{ ...inputStyle, fontSize: '12px' }}
+              />
+              <input
+                value={groupToolsDraft}
+                onChange={(e) => setGroupToolsDraft(e.target.value)}
+                placeholder="tool names separated by comma"
+                style={{ ...inputStyle, fontSize: '12px' }}
+              />
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  onClick={addGroup}
+                  style={{ ...btnStyle, padding: '6px 10px', fontSize: '11px', background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)', color: '#34D399', cursor: 'pointer' }}
+                >
+                  + Add group
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

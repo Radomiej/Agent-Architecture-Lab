@@ -1,13 +1,10 @@
 import type { Agent, CanvasNode, Connection, ToolCall, ToolType } from '../types'
 import { useVfsStore } from '../store/vfsStore'
+import { useMcpStore } from '../store/mcpStore'
 import { simulateBash } from './bashSimulator'
+import { resolveAgentTools } from './resolveAgentTools'
 
 type VfsApi = ReturnType<typeof useVfsStore.getState>
-
-/** Parse the comma-separated tools string from an agent definition. */
-function parseTools(toolsStr: string): string[] {
-  return toolsStr.split(',').map(t => t.trim()).filter(Boolean)
-}
 
 /** Generate a unique tool call ID. */
 let _seq = 0
@@ -27,7 +24,8 @@ export function simulateToolCalls(
   agentMap: Map<string, Agent>,
   vfs: VfsApi,
 ): ToolCall[] {
-  const tools = parseTools(agent.tools)
+  const { agentToolOverrides, toolGroups } = useMcpStore.getState()
+  const tools = resolveAgentTools(agent.id, agent.tools, agentToolOverrides, toolGroups)
   const calls: ToolCall[] = []
 
   // Determine upstream agents for context

@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { McpSession, type McpToolDef, type McpCallResult, type McpSessionConfig } from '../services/mcpService'
+import type { McpToolGroup } from '../types'
 
 const LS_KEY = 'acMcp'
 
@@ -7,6 +8,12 @@ interface McpConfig {
   gatewayUrl: string
   bearerToken: string
   enabled: boolean
+}
+
+interface McpPersisted {
+  config?: Partial<McpConfig>
+  toolGroups?: McpToolGroup[]
+  agentToolOverrides?: Record<string, string[]>
 }
 
 /**
@@ -35,11 +42,19 @@ interface McpStore {
   status: 'disconnected' | 'connecting' | 'connected' | 'error'
   errorMsg: string | null
   tools: McpToolDef[]
+  toolGroups: McpToolGroup[]
+  agentToolOverrides: Record<string, string[]>
   panelOpen: boolean
   /** Active session — reused across calls */
   _session: McpSession | null
 
   setConfig: (patch: Partial<McpConfig>) => void
+  setToolGroups: (groups: McpToolGroup[]) => void
+  addToolGroup: (name: string, toolNames: string[]) => void
+  updateToolGroup: (id: string, patch: Partial<Pick<McpToolGroup, 'name' | 'toolNames'>>) => void
+  removeToolGroup: (id: string) => void
+  setAgentTools: (agentId: string, tools: string[]) => void
+  resetAgentTools: (agentId: string) => void
   connect: () => Promise<void>
   disconnect: () => Promise<void>
   refreshTools: () => Promise<void>
@@ -47,39 +62,145 @@ interface McpStore {
   togglePanel: () => void
 }
 
-function loadConfig(): McpConfig {
+const DEFAULT_CONFIG: McpConfig = {
+  gatewayUrl: 'http://localhost:8808/mcp',
+  bearerToken: '',
+  enabled: false,
+}
+
+const sanitizeToolNames = (tools: string[]): string[] =>
+  Array.from(new Set(tools.map((tool) => tool.trim()).filter(Boolean)))
+
+const sanitizeToolGroups = (groups: McpToolGroup[]): McpToolGroup[] =>
+  groups
+    .map((group) => {
+      const name = group.name.trim()
+      if (!name) return null
+      return {
+        id: group.id,
+        name,
+        toolNames: sanitizeToolNames(group.toolNames),
+      }
+    })
+    .filter((group): group is McpToolGroup => !!group)
+
+const sanitizeOverrides = (overrides: Record<string, string[]>): Record<string, string[]> =>
+  Object.fromEntries(
+    Object.entries(overrides)
+      .map(([agentId, tools]) => [agentId, sanitizeToolNames(Array.isArray(tools) ? tools : [])])
+      .filter(([, tools]) => tools.length > 0),
+  )
+
+function loadPersisted(): {
+  config: McpConfig
+  toolGroups: McpToolGroup[]
+  agentToolOverrides: Record<string, string[]>
+} {
   try {
     const raw = localStorage.getItem(LS_KEY)
     if (raw) {
-      const parsed = JSON.parse(raw) as Partial<McpConfig>
-      return {
-        gatewayUrl: parsed.gatewayUrl ?? 'http://localhost:8808/mcp',
-        bearerToken: parsed.bearerToken ?? '',
-        enabled: parsed.enabled ?? false,
+      const parsed = JSON.parse(raw) as McpPersisted | Partial<McpConfig>
+      const persisted = parsed as McpPersisted
+      const configRaw: Partial<McpConfig> = persisted.config ?? (parsed as Partial<McpConfig>)
+      const config: McpConfig = {
+        gatewayUrl: configRaw?.gatewayUrl ?? DEFAULT_CONFIG.gatewayUrl,
+        bearerToken: configRaw?.bearerToken ?? DEFAULT_CONFIG.bearerToken,
+        enabled: configRaw?.enabled ?? DEFAULT_CONFIG.enabled,
       }
+      const toolGroups = Array.isArray(persisted.toolGroups)
+        ? sanitizeToolGroups(persisted.toolGroups ?? [])
+        : []
+      const agentToolOverrides = sanitizeOverrides(persisted.agentToolOverrides ?? {})
+
+      return { config, toolGroups, agentToolOverrides }
     }
   } catch { /* ignore */ }
-  return { gatewayUrl: 'http://localhost:8808/mcp', bearerToken: '', enabled: false }
+  return { config: DEFAULT_CONFIG, toolGroups: [], agentToolOverrides: {} }
 }
 
-function saveConfig(cfg: McpConfig): void {
+function savePersisted(config: McpConfig, toolGroups: McpToolGroup[], agentToolOverrides: Record<string, string[]>): void {
   try {
-    localStorage.setItem(LS_KEY, JSON.stringify(cfg))
+    localStorage.setItem(LS_KEY, JSON.stringify({
+      config,
+      toolGroups: sanitizeToolGroups(toolGroups),
+      agentToolOverrides: sanitizeOverrides(agentToolOverrides),
+    }))
   } catch { /* QuotaExceededError — ignore */ }
 }
 
+const initialState = loadPersisted()
+
 export const useMcpStore = create<McpStore>((set, get) => ({
-  config: loadConfig(),
+  config: initialState.config,
   status: 'disconnected',
   errorMsg: null,
   tools: [],
+  toolGroups: initialState.toolGroups,
+  agentToolOverrides: initialState.agentToolOverrides,
   panelOpen: false,
   _session: null,
 
   setConfig: (patch) => {
     const next = { ...get().config, ...patch }
-    saveConfig(next)
+    const { toolGroups, agentToolOverrides } = get()
+    savePersisted(next, toolGroups, agentToolOverrides)
     set({ config: next })
+  },
+
+  setToolGroups: (groups) => {
+    const sanitized = sanitizeToolGroups(groups)
+    const { config, agentToolOverrides } = get()
+    savePersisted(config, sanitized, agentToolOverrides)
+    set({ toolGroups: sanitized })
+  },
+
+  addToolGroup: (name, toolNames) => {
+    const trimmed = name.trim()
+    if (!trimmed) return
+    const nextGroup: McpToolGroup = {
+      id: `grp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      name: trimmed,
+      toolNames: sanitizeToolNames(toolNames),
+    }
+    const { toolGroups } = get()
+    get().setToolGroups([...toolGroups, nextGroup])
+  },
+
+  updateToolGroup: (id, patch) => {
+    const { toolGroups } = get()
+    const next = toolGroups.map((group) => {
+      if (group.id !== id) return group
+      return {
+        ...group,
+        name: patch.name !== undefined ? patch.name.trim() : group.name,
+        toolNames: patch.toolNames !== undefined ? sanitizeToolNames(patch.toolNames) : group.toolNames,
+      }
+    })
+    get().setToolGroups(next)
+  },
+
+  removeToolGroup: (id) => {
+    const { toolGroups } = get()
+    const next = toolGroups.filter((group) => group.id !== id)
+    get().setToolGroups(next)
+  },
+
+  setAgentTools: (agentId, tools) => {
+    const { config, toolGroups, agentToolOverrides } = get()
+    const nextOverrides = {
+      ...agentToolOverrides,
+      [agentId]: sanitizeToolNames(tools),
+    }
+    savePersisted(config, toolGroups, nextOverrides)
+    set({ agentToolOverrides: nextOverrides })
+  },
+
+  resetAgentTools: (agentId) => {
+    const { config, toolGroups, agentToolOverrides } = get()
+    const nextOverrides = { ...agentToolOverrides }
+    delete nextOverrides[agentId]
+    savePersisted(config, toolGroups, nextOverrides)
+    set({ agentToolOverrides: nextOverrides })
   },
 
   connect: async () => {
