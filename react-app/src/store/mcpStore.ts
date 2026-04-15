@@ -9,6 +9,26 @@ interface McpConfig {
   enabled: boolean
 }
 
+/**
+ * In dev (Vite), rewrite the gateway URL to go through the Vite proxy
+ * (/mcp-proxy) so CORS headers are added automatically.
+ * In production builds (served from same origin or GitHub Pages),
+ * the URL is used as-is since users will either run their own proxy
+ * or the gateway will be on the same origin.
+ */
+function resolveGatewayUrl(raw: string): string {
+  if (import.meta.env.DEV) {
+    // Replace http(s)://localhost:<port>/mcp with /mcp-proxy so Vite proxies it
+    try {
+      const u = new URL(raw)
+      if (u.hostname === 'localhost' || u.hostname === '127.0.0.1') {
+        return '/mcp-proxy'
+      }
+    } catch { /* not a valid URL — return as-is */ }
+  }
+  return raw
+}
+
 interface McpStore {
   config: McpConfig
   /** null = disconnected, 'connecting' | 'connected' | 'error' */
@@ -68,7 +88,7 @@ export const useMcpStore = create<McpStore>((set, get) => ({
 
     set({ status: 'connecting', errorMsg: null })
     const sessionCfg: McpSessionConfig = {
-      gatewayUrl: config.gatewayUrl,
+      gatewayUrl: resolveGatewayUrl(config.gatewayUrl),
       bearerToken: config.bearerToken || undefined,
     }
     const session = new McpSession(sessionCfg)

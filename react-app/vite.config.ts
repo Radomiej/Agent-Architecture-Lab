@@ -5,6 +5,15 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   plugins: [tailwindcss(), react()],
   base: './',
+  server: {
+    proxy: {
+      '/mcp-proxy': {
+        target: 'http://localhost:8808',
+        rewrite: (path) => path.replace(/^\/mcp-proxy/, '/mcp'),
+        changeOrigin: true,
+      },
+    },
+  },
   build: {
     outDir: 'dist',
     rollupOptions: {
