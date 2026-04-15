@@ -1,8 +1,9 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   callAgent,
   callWebSearch,
   COMETAPI_BASE_URL,
+  fetchModelCatalog,
   OPENROUTER_BASE_URL,
   PERPLEXITY_BASE_URL,
   testConnection,
@@ -26,6 +27,21 @@ function makeStreamResponse(chunks: string[]) {
     }),
   }
 }
+
+const localStorageMock = (() => {
+  let store: Record<string, string> = {}
+  return {
+    getItem: (key: string) => store[key] ?? null,
+    setItem: (key: string, value: string) => { store[key] = value },
+    removeItem: (key: string) => { delete store[key] },
+    clear: () => { store = {} },
+  }
+})()
+
+beforeEach(() => {
+  localStorageMock.clear()
+  vi.stubGlobal('localStorage', localStorageMock)
+})
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -194,5 +210,51 @@ describe('llmService.callAgent', () => {
 
     expect(String(fetchMock.mock.calls[0][0])).toContain(OPENROUTER_BASE_URL)
     expect(String(fetchMock.mock.calls[1][0])).toContain(PERPLEXITY_BASE_URL)
+  })
+
+  it('fetchModelCatalog normalizes /models payload and caches it', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        data: [
+          { id: 'anthropic/claude-sonnet-4-5', name: 'Claude Sonnet 4.5', context_length: 1_000_000, pricing: { prompt: '0.000003', completion: '0.000015' } },
+          { id: 'openai/gpt-4o', name: 'GPT-4o', context_length: 128000 },
+        ],
+      }),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const first = await fetchModelCatalog('sk-or-test', OPENROUTER_BASE_URL)
+    expect(first.ok).toBe(true)
+    expect(first.fromCache).toBe(false)
+    expect(first.models[0].id).toBe('anthropic/claude-sonnet-4-5')
+    expect(first.models[0].promptPricePerToken).toBe(0.000003)
+
+    const second = await fetchModelCatalog('sk-or-test', OPENROUTER_BASE_URL)
+    expect(second.ok).toBe(true)
+    expect(second.fromCache).toBe(true)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('fetchModelCatalog falls back to cached models when refresh fails', async () => {
+    const fetchOk = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ data: [{ id: 'claude-sonnet-4-5' }] }),
+    })
+    vi.stubGlobal('fetch', fetchOk)
+    await fetchModelCatalog('sk-test', COMETAPI_BASE_URL)
+
+    const fetchFail = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+      text: async () => 'server failure',
+    })
+    vi.stubGlobal('fetch', fetchFail)
+
+    const result = await fetchModelCatalog('sk-test', COMETAPI_BASE_URL, { forceRefresh: true })
+    expect(result.ok).toBe(true)
+    expect(result.fromCache).toBe(true)
+    expect(result.models[0].id).toBe('claude-sonnet-4-5')
+    expect(result.error).toBe('server failure')
   })
 })

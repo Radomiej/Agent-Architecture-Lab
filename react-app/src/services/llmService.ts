@@ -60,6 +60,25 @@ export interface LLMCallOptions {
   signal?: AbortSignal
 }
 
+export interface ProviderModelCatalogItem {
+  id: string
+  name: string
+  contextLength?: number
+  promptPricePerToken?: number
+  completionPricePerToken?: number
+}
+
+export interface ProviderModelCatalogResult {
+  ok: boolean
+  models: ProviderModelCatalogItem[]
+  fromCache: boolean
+  fetchedAt?: number
+  error?: string
+}
+
+const MODEL_CATALOG_CACHE_KEY = 'acLLM_modelCatalog'
+const MODEL_CATALOG_TTL_MS = 24 * 60 * 60 * 1000
+
 /**
  * Call CometAPI (OpenAI-compatible) with streaming support.
  * Returns a typed LLMResult. Never throws — errors are returned as ok:false.
@@ -209,6 +228,143 @@ export async function testConnection(
     return { ok: true }
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : String(err) }
+  }
+}
+
+interface ModelCatalogCacheEntry {
+  fetchedAt: number
+  models: ProviderModelCatalogItem[]
+}
+
+type ModelCatalogCacheStore = Record<string, ModelCatalogCacheEntry>
+
+function getModelCatalogCacheKey(baseUrl: string): string {
+  return baseUrl.replace(/\/+$/, '').toLowerCase()
+}
+
+function loadModelCatalogCache(): ModelCatalogCacheStore {
+  try {
+    const raw = localStorage.getItem(MODEL_CATALOG_CACHE_KEY)
+    if (!raw) return {}
+    const parsed = JSON.parse(raw) as ModelCatalogCacheStore
+    return parsed && typeof parsed === 'object' ? parsed : {}
+  } catch {
+    return {}
+  }
+}
+
+function saveModelCatalogCache(cache: ModelCatalogCacheStore): void {
+  try {
+    localStorage.setItem(MODEL_CATALOG_CACHE_KEY, JSON.stringify(cache))
+  } catch {
+    // Ignore cache write failures.
+  }
+}
+
+function parseNumeric(value: unknown): number | undefined {
+  if (typeof value === 'number' && Number.isFinite(value)) return value
+  if (typeof value === 'string') {
+    const parsed = Number.parseFloat(value)
+    return Number.isFinite(parsed) ? parsed : undefined
+  }
+  return undefined
+}
+
+function normalizeModelCatalog(data: unknown): ProviderModelCatalogItem[] {
+  const rows = Array.isArray(data)
+    ? data
+    : (typeof data === 'object' && data && Array.isArray((data as { data?: unknown }).data)
+      ? (data as { data: unknown[] }).data
+      : [])
+
+  const unique = new Map<string, ProviderModelCatalogItem>()
+
+  rows.forEach((row) => {
+    if (!row || typeof row !== 'object') return
+    const item = row as {
+      id?: unknown
+      name?: unknown
+      context_length?: unknown
+      contextLength?: unknown
+      pricing?: { prompt?: unknown; completion?: unknown; input?: unknown; output?: unknown }
+    }
+
+    const id = typeof item.id === 'string' ? item.id.trim() : ''
+    if (!id) return
+
+    const model: ProviderModelCatalogItem = {
+      id,
+      name: typeof item.name === 'string' && item.name.trim() ? item.name.trim() : id,
+      contextLength: parseNumeric(item.context_length ?? item.contextLength),
+      promptPricePerToken: parseNumeric(item.pricing?.prompt ?? item.pricing?.input),
+      completionPricePerToken: parseNumeric(item.pricing?.completion ?? item.pricing?.output),
+    }
+
+    if (!unique.has(id)) {
+      unique.set(id, model)
+    }
+  })
+
+  return Array.from(unique.values()).sort((a, b) => {
+    const byName = a.name.localeCompare(b.name)
+    return byName !== 0 ? byName : a.id.localeCompare(b.id)
+  })
+}
+
+export async function fetchModelCatalog(
+  apiKey: string,
+  baseUrl = COMETAPI_BASE_URL,
+  options?: { forceRefresh?: boolean; ttlMs?: number },
+): Promise<ProviderModelCatalogResult> {
+  const forceRefresh = options?.forceRefresh ?? false
+  const ttlMs = options?.ttlMs ?? MODEL_CATALOG_TTL_MS
+  const cacheKey = getModelCatalogCacheKey(baseUrl)
+  const cache = loadModelCatalogCache()
+  const cached = cache[cacheKey]
+
+  if (!forceRefresh && cached && Date.now() - cached.fetchedAt <= ttlMs) {
+    return { ok: true, models: cached.models, fromCache: true, fetchedAt: cached.fetchedAt }
+  }
+
+  const extra = baseUrl.includes('openrouter.ai') ? OPENROUTER_HEADERS : {}
+
+  try {
+    const response = await fetch(`${baseUrl.replace(/\/$/, '')}/models`, {
+      headers: { Authorization: `Bearer ${apiKey}`, ...extra },
+      signal: AbortSignal.timeout(10000),
+    })
+
+    if (!response.ok) {
+      const errText = await response.text().catch(() => '')
+      if (cached) {
+        return {
+          ok: true,
+          models: cached.models,
+          fromCache: true,
+          fetchedAt: cached.fetchedAt,
+          error: errText || `HTTP ${response.status}`,
+        }
+      }
+      return { ok: false, models: [], fromCache: false, error: errText || `HTTP ${response.status}` }
+    }
+
+    const json = await response.json()
+    const models = normalizeModelCatalog(json)
+    const fetchedAt = Date.now()
+    cache[cacheKey] = { fetchedAt, models }
+    saveModelCatalogCache(cache)
+    return { ok: true, models, fromCache: false, fetchedAt }
+  } catch (err) {
+    if (cached) {
+      return {
+        ok: true,
+        models: cached.models,
+        fromCache: true,
+        fetchedAt: cached.fetchedAt,
+        error: err instanceof Error ? err.message : String(err),
+      }
+    }
+    return { ok: false, models: [], fromCache: false, error: err instanceof Error ? err.message : String(err) }
   }
 }
 

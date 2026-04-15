@@ -121,7 +121,7 @@ test.describe('Agent Architecture Designer — core UI', () => {
     await expect(rightSidebar).toContainText('Orkiestrator')
     // Should show role section
     await expect(rightSidebar.locator('text=ROLA')).toBeVisible()
-    await expect(rightSidebar.locator('text=NARZEDZIA')).toBeVisible()
+    await expect(rightSidebar.locator('text=/Tools|NARZEDZIA|NARZĘDZIA/i')).toBeVisible()
   })
 
   test('clicking canvas node populates right sidebar', async ({ page }) => {

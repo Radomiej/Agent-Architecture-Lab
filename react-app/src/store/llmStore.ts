@@ -38,29 +38,91 @@ function defaultBaseUrl(provider: LLMProvider): string {
   return provider === 'openrouter' ? OPENROUTER_BASE_URL : COMETAPI_BASE_URL
 }
 
-function loadConfig(): LLMConfig {
+interface ProviderLLMConfig {
+  apiKey: string
+  baseUrl: string
+  modelMap: Record<ModelType, string>
+}
+
+type ProviderConfigMap = Record<LLMProvider, ProviderLLMConfig>
+
+interface PersistedLLMConfig {
+  provider?: string
+  apiKey?: string
+  baseUrl?: string
+  modelMap?: Partial<Record<ModelType, string>>
+  debugMode?: boolean
+  providers?: Partial<Record<LLMProvider, {
+    apiKey?: string
+    baseUrl?: string
+    modelMap?: Partial<Record<ModelType, string>>
+  }>>
+}
+
+interface LoadedLLMState extends LLMConfig {
+  providerConfigs: ProviderConfigMap
+}
+
+function makeProviderProfile(provider: LLMProvider, partial?: {
+  apiKey?: string
+  baseUrl?: string
+  modelMap?: Partial<Record<ModelType, string>>
+}): ProviderLLMConfig {
+  return {
+    apiKey: normalizeStoredText(partial?.apiKey) ?? getEnvApiKey(provider),
+    baseUrl: partial?.baseUrl ?? defaultBaseUrl(provider),
+    modelMap: { ...defaultModelMap(provider), ...(partial?.modelMap ?? {}) },
+  }
+}
+
+function loadConfig(): LoadedLLMState {
   try {
     const raw = localStorage.getItem(LS_KEY)
     if (raw) {
-      const parsed = JSON.parse(raw) as Partial<LLMConfig>
+      const parsed = JSON.parse(raw) as PersistedLLMConfig
       const provider = normalizeProvider(parsed.provider)
+      const providerConfigs: ProviderConfigMap = {
+        cometapi: makeProviderProfile('cometapi'),
+        openrouter: makeProviderProfile('openrouter'),
+      }
+
+      if (parsed.providers) {
+        providerConfigs.cometapi = makeProviderProfile('cometapi', parsed.providers.cometapi)
+        providerConfigs.openrouter = makeProviderProfile('openrouter', parsed.providers.openrouter)
+      } else {
+        // Legacy migration: single provider config becomes snapshot for that provider.
+        providerConfigs[provider] = makeProviderProfile(provider, {
+          apiKey: parsed.apiKey,
+          baseUrl: parsed.baseUrl,
+          modelMap: parsed.modelMap,
+        })
+      }
+
+      const active = providerConfigs[provider]
       return {
         provider,
-        apiKey: normalizeStoredText(parsed.apiKey) ?? getEnvApiKey(provider),
-        baseUrl: parsed.baseUrl ?? defaultBaseUrl(provider),
-        modelMap: { ...defaultModelMap(provider), ...(parsed.modelMap ?? {}) },
+        apiKey: active.apiKey,
+        baseUrl: active.baseUrl,
+        modelMap: active.modelMap,
         debugMode: parsed.debugMode ?? false,
+        providerConfigs,
       }
     }
   } catch { /* ignore */ }
 
   const provider = getDefaultLLMProvider()
+  const providerConfigs: ProviderConfigMap = {
+    cometapi: makeProviderProfile('cometapi'),
+    openrouter: makeProviderProfile('openrouter'),
+  }
+
   return {
     provider,
-    apiKey: getEnvApiKey(provider),
-    baseUrl: defaultBaseUrl(provider),
-    modelMap: { ...defaultModelMap(provider) },
+    apiKey: providerConfigs[provider].apiKey,
+    baseUrl: providerConfigs[provider].baseUrl,
+    modelMap: providerConfigs[provider].modelMap,
     debugMode: false,
+    providerConfigs,
   }
 }
 
@@ -88,11 +150,31 @@ function loadWebSearch(): WebSearchConfig {
   return envDefaults
 }
 
-function saveConfig(cfg: LLMConfig) {
-  const envApiKey = normalizeStoredText(getEnvApiKey(cfg.provider))
+function sanitizeProviderConfig(provider: LLMProvider, cfg: ProviderLLMConfig): ProviderLLMConfig {
+  return {
+    apiKey: normalizeStoredText(cfg.apiKey) ?? getEnvApiKey(provider),
+    baseUrl: cfg.baseUrl || defaultBaseUrl(provider),
+    modelMap: { ...defaultModelMap(provider), ...cfg.modelMap },
+  }
+}
+
+function saveConfig(cfg: { provider: LLMProvider; debugMode: boolean; providerConfigs: ProviderConfigMap }) {
+  const persistProvider = (provider: LLMProvider) => {
+    const profile = sanitizeProviderConfig(provider, cfg.providerConfigs[provider])
+    const envApiKey = normalizeStoredText(getEnvApiKey(provider))
+    return {
+      ...profile,
+      apiKey: normalizeStoredText(profile.apiKey) === envApiKey ? '' : profile.apiKey,
+    }
+  }
+
   const persisted = {
-    ...cfg,
-    apiKey: normalizeStoredText(cfg.apiKey) === envApiKey ? '' : cfg.apiKey,
+    provider: cfg.provider,
+    debugMode: cfg.debugMode,
+    providers: {
+      cometapi: persistProvider('cometapi'),
+      openrouter: persistProvider('openrouter'),
+    },
   }
 
   try { localStorage.setItem(LS_KEY, JSON.stringify(persisted)) } catch { /* ignore */ }
@@ -111,6 +193,8 @@ function saveWebSearch(ws: WebSearchConfig) {
 // ─── Store ─────────────────────────────────────────────────────────────────────
 
 interface LLMStore extends LLMConfig {
+  providerConfigs: ProviderConfigMap
+
   // LLM Provider actions
   setProvider: (p: LLMProvider) => void
   setApiKey: (key: string) => void
@@ -118,6 +202,7 @@ interface LLMStore extends LLMConfig {
   setDebugMode: (on: boolean) => void
   setModelId: (tier: ModelType, modelId: string) => void
   setConfig: (cfg: Partial<LLMConfig>) => void
+  setProviderConfigs: (provider: LLMProvider, configs: ProviderConfigMap, debugMode: boolean) => void
 
   // Web Search Tool (separate concept)
   webSearch: WebSearchConfig
@@ -136,53 +221,109 @@ export const useLLMStore = create<LLMStore>((set, get) => ({
 
   setProvider: (provider) => {
     const current = get()
-    const currentEnvKey = normalizeStoredText(getEnvApiKey(current.provider))
-    const nextEnvKey = getEnvApiKey(provider)
-    const nextApiKey = normalizeStoredText(current.apiKey) === currentEnvKey ? nextEnvKey : current.apiKey
-
-    const next: LLMConfig = {
-      ...current,
+    const nextProfile = sanitizeProviderConfig(provider, current.providerConfigs[provider])
+    const next = {
       provider,
-      apiKey: nextApiKey,
-      baseUrl: defaultBaseUrl(provider),
-      modelMap: defaultModelMap(provider),
+      apiKey: nextProfile.apiKey,
+      baseUrl: nextProfile.baseUrl,
+      modelMap: nextProfile.modelMap,
+      debugMode: current.debugMode,
+      providerConfigs: current.providerConfigs,
     }
     saveConfig(next)
     set({ provider: next.provider, apiKey: next.apiKey, baseUrl: next.baseUrl, modelMap: next.modelMap })
   },
 
   setApiKey: (apiKey) => {
-    const provider = get().provider
-    const next = { ...get(), apiKey: normalizeStoredText(apiKey) ?? getEnvApiKey(provider) }
+    const current = get()
+    const provider = current.provider
+    const nextApiKey = normalizeStoredText(apiKey) ?? getEnvApiKey(provider)
+    const providerConfigs = {
+      ...current.providerConfigs,
+      [provider]: { ...current.providerConfigs[provider], apiKey: nextApiKey },
+    }
+    const next = { provider, apiKey: nextApiKey, baseUrl: current.baseUrl, modelMap: current.modelMap, debugMode: current.debugMode, providerConfigs }
     saveConfig(next)
-    set({ apiKey: next.apiKey })
+    set({ apiKey: next.apiKey, providerConfigs })
   },
 
   setBaseUrl: (baseUrl) => {
-    const next = { ...get(), baseUrl }
+    const current = get()
+    const provider = current.provider
+    const providerConfigs = {
+      ...current.providerConfigs,
+      [provider]: { ...current.providerConfigs[provider], baseUrl },
+    }
+    const next = { provider, apiKey: current.apiKey, baseUrl, modelMap: current.modelMap, debugMode: current.debugMode, providerConfigs }
     saveConfig(next)
-    set({ baseUrl })
+    set({ baseUrl, providerConfigs })
   },
 
   setDebugMode: (debugMode) => {
-    const next = { ...get(), debugMode }
+    const current = get()
+    const next = {
+      provider: current.provider,
+      apiKey: current.apiKey,
+      baseUrl: current.baseUrl,
+      modelMap: current.modelMap,
+      debugMode,
+      providerConfigs: current.providerConfigs,
+    }
     saveConfig(next)
     set({ debugMode })
   },
 
   setModelId: (tier, modelId) => {
-    const modelMap = { ...get().modelMap, [tier]: modelId }
-    const next = { ...get(), modelMap }
+    const current = get()
+    const provider = current.provider
+    const modelMap = { ...current.modelMap, [tier]: modelId }
+    const providerConfigs = {
+      ...current.providerConfigs,
+      [provider]: { ...current.providerConfigs[provider], modelMap },
+    }
+    const next = { provider, apiKey: current.apiKey, baseUrl: current.baseUrl, modelMap, debugMode: current.debugMode, providerConfigs }
     saveConfig(next)
-    set({ modelMap })
+    set({ modelMap, providerConfigs })
   },
 
   setConfig: (cfg) => {
-    const merged = { ...get(), ...cfg }
+    const current = get()
+    const provider = normalizeProvider(cfg.provider ?? current.provider)
+    const currentProfile = current.providerConfigs[provider]
+    const nextProfile = sanitizeProviderConfig(provider, {
+      apiKey: cfg.apiKey ?? currentProfile.apiKey,
+      baseUrl: cfg.baseUrl ?? currentProfile.baseUrl,
+      modelMap: cfg.modelMap ?? currentProfile.modelMap,
+    })
+    const providerConfigs = {
+      ...current.providerConfigs,
+      [provider]: nextProfile,
+    }
     const next = {
-      ...merged,
-      provider: normalizeProvider(merged.provider),
-      apiKey: normalizeStoredText(merged.apiKey) ?? getEnvApiKey(normalizeProvider(merged.provider)),
+      provider,
+      apiKey: nextProfile.apiKey,
+      baseUrl: nextProfile.baseUrl,
+      modelMap: nextProfile.modelMap,
+      debugMode: cfg.debugMode ?? current.debugMode,
+      providerConfigs,
+    }
+    saveConfig(next)
+    set(next)
+  },
+
+  setProviderConfigs: (provider, configs, debugMode) => {
+    const nextConfigs: ProviderConfigMap = {
+      cometapi: sanitizeProviderConfig('cometapi', configs.cometapi),
+      openrouter: sanitizeProviderConfig('openrouter', configs.openrouter),
+    }
+    const active = nextConfigs[provider]
+    const next = {
+      provider,
+      apiKey: active.apiKey,
+      baseUrl: active.baseUrl,
+      modelMap: active.modelMap,
+      debugMode,
+      providerConfigs: nextConfigs,
     }
     saveConfig(next)
     set(next)
@@ -206,14 +347,19 @@ export const useLLMStore = create<LLMStore>((set, get) => ({
     try { localStorage.removeItem(LS_KEY) } catch { /* ignore */ }
     try { localStorage.removeItem(LS_WS_KEY) } catch { /* ignore */ }
     const provider = getDefaultLLMProvider()
+    const providerConfigs: ProviderConfigMap = {
+      cometapi: makeProviderProfile('cometapi'),
+      openrouter: makeProviderProfile('openrouter'),
+    }
+    const active = providerConfigs[provider]
     const freshLLM: LLMConfig = {
       provider,
-      apiKey: getEnvApiKey(provider),
-      baseUrl: defaultBaseUrl(provider),
-      modelMap: { ...defaultModelMap(provider) },
+      apiKey: active.apiKey,
+      baseUrl: active.baseUrl,
+      modelMap: active.modelMap,
       debugMode: false,
     }
     const freshWS = getEnvWebSearchConfig()
-    set({ ...freshLLM, webSearch: freshWS })
+    set({ ...freshLLM, providerConfigs, webSearch: freshWS })
   },
 }))

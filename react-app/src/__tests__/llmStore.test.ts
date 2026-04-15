@@ -86,16 +86,35 @@ describe('llmStore', () => {
     expect(state.debugMode).toBe(true)
   })
 
-  it('switches provider and preserves custom key when it differs from env key', async () => {
+  it('switches provider and loads the target provider key snapshot', async () => {
     const store = await freshStore()
     store.getState().setApiKey('my-private-key')
     store.getState().setProvider('openrouter')
     const state = store.getState()
 
     expect(state.provider).toBe('openrouter')
-    expect(state.apiKey).toBe('my-private-key')
+    expect(state.apiKey).toBe('or-env-key')
     expect(state.baseUrl).toContain('openrouter.ai')
     expect(state.modelMap.opus).toContain('anthropic/')
+  })
+
+  it('restores provider-specific key and model map when switching back and forth', async () => {
+    const store = await freshStore()
+
+    store.getState().setApiKey('comet-custom-key')
+    store.getState().setModelId('sonnet', 'comet/custom-sonnet')
+
+    store.getState().setProvider('openrouter')
+    store.getState().setApiKey('or-custom-key')
+    store.getState().setModelId('opus', 'openrouter/custom-opus')
+
+    store.getState().setProvider('cometapi')
+    expect(store.getState().apiKey).toBe('comet-custom-key')
+    expect(store.getState().modelMap.sonnet).toBe('comet/custom-sonnet')
+
+    store.getState().setProvider('openrouter')
+    expect(store.getState().apiKey).toBe('or-custom-key')
+    expect(store.getState().modelMap.opus).toBe('openrouter/custom-opus')
   })
 
   it('falls back to env key when setApiKey receives blank value', async () => {

@@ -1,8 +1,17 @@
-import React, { useId, useState } from 'react'
+import React, { useEffect, useId, useMemo, useState } from 'react'
 import { useUiStore } from '../../store/uiStore'
 import { useLLMStore } from '../../store/llmStore'
 import { useMcpStore } from '../../store/mcpStore'
-import { testConnection, testWebSearchConnection, COMETAPI_BASE_URL, OPENROUTER_BASE_URL, DEFAULT_MODEL_MAP, OPENROUTER_DEFAULT_MODEL_MAP } from '../../services/llmService'
+import {
+  testConnection,
+  testWebSearchConnection,
+  COMETAPI_BASE_URL,
+  OPENROUTER_BASE_URL,
+  DEFAULT_MODEL_MAP,
+  OPENROUTER_DEFAULT_MODEL_MAP,
+  fetchModelCatalog,
+  type ProviderModelCatalogItem,
+} from '../../services/llmService'
 import type { ModelType, LLMProvider, WebSearchProvider, SonarModelId, McpToolGroup } from '../../types'
 import { SONAR_MODELS } from '../../types'
 import { getEnvApiKey, getEnvWebSearchApiKey, getEnvWebSearchConfig, getDefaultLLMProvider } from '../../utils/env'
@@ -44,6 +53,48 @@ const MODEL_PRESETS: Record<LLMProvider, Partial<Record<ModelType, string[]>>> =
 }
 
 type TestState = 'idle' | 'testing' | 'ok' | 'error'
+
+interface CatalogState {
+  loading: boolean
+  error: string
+  fromCache: boolean
+  fetchedAt?: number
+  models: ProviderModelCatalogItem[]
+}
+
+function fuzzyScore(text: string, query: string): number {
+  const src = text.toLowerCase()
+  const q = query.trim().toLowerCase()
+  if (!q) return 1
+  if (src === q) return 100
+  if (src.startsWith(q)) return 80
+  if (src.includes(q)) return 60
+
+  let cursor = 0
+  for (let idx = 0; idx < src.length && cursor < q.length; idx += 1) {
+    if (src[idx] === q[cursor]) cursor += 1
+  }
+  return cursor === q.length ? 35 : 0
+}
+
+function filterModels(items: ProviderModelCatalogItem[], query: string): ProviderModelCatalogItem[] {
+  const q = query.trim()
+  if (!q) return items.slice(0, 8)
+
+  return items
+    .map((item) => {
+      const scoreId = fuzzyScore(item.id, q)
+      const scoreName = fuzzyScore(item.name, q)
+      return { item, score: Math.max(scoreId, scoreName) }
+    })
+    .filter((entry) => entry.score > 0)
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score
+      return a.item.id.localeCompare(b.item.id)
+    })
+    .slice(0, 8)
+    .map((entry) => entry.item)
+}
 
 // ─── Tiny primitives ──────────────────────────────────────────────────────────
 
@@ -237,13 +288,30 @@ const LLMSettingsContent: React.FC = () => {
 
   // ── LLM Provider state ──────────────────────────────────────────────────────
   const [provider, setProviderDraft] = useState<LLMProvider>(llm.provider)
-  const [apiKeyDraft, setApiKeyDraft] = useState(llm.apiKey)
-  const [baseUrlDraft, setBaseUrlDraft] = useState(llm.baseUrl)
-  const [modelMapDraft, setModelMapDraft] = useState({ ...llm.modelMap })
+  const [providerConfigsDraft, setProviderConfigsDraft] = useState(() => ({
+    cometapi: {
+      apiKey: llm.providerConfigs.cometapi.apiKey,
+      baseUrl: llm.providerConfigs.cometapi.baseUrl,
+      modelMap: { ...llm.providerConfigs.cometapi.modelMap },
+    },
+    openrouter: {
+      apiKey: llm.providerConfigs.openrouter.apiKey,
+      baseUrl: llm.providerConfigs.openrouter.baseUrl,
+      modelMap: { ...llm.providerConfigs.openrouter.modelMap },
+    },
+  }))
+  const apiKeyDraft = providerConfigsDraft[provider].apiKey
+  const baseUrlDraft = providerConfigsDraft[provider].baseUrl
+  const modelMapDraft = providerConfigsDraft[provider].modelMap
   const [debugDraft, setDebugDraft] = useState(llm.debugMode)
   const [showKey, setShowKey] = useState(false)
   const [testState, setTestState] = useState<TestState>('idle')
   const [testError, setTestError] = useState('')
+  const [modelSearch, setModelSearch] = useState<Record<ModelType, string>>({ opus: '', sonnet: '', haiku: '' })
+  const [catalogByProvider, setCatalogByProvider] = useState<Record<LLMProvider, CatalogState>>({
+    cometapi: { loading: false, error: '', fromCache: false, models: [] },
+    openrouter: { loading: false, error: '', fromCache: false, models: [] },
+  })
 
   // ── Web Search Tool state ───────────────────────────────────────────────────
   const [wsEnabled, setWsEnabled] = useState(llm.webSearch.enabled)
@@ -257,25 +325,58 @@ const LLMSettingsContent: React.FC = () => {
   // ── Handlers ────────────────────────────────────────────────────────────────
 
   const handleProviderChange = (p: LLMProvider) => {
-    const currentEnvKey = getEnvApiKey(provider)
-    const nextEnvKey = getEnvApiKey(p)
-
     setProviderDraft(p)
-    setBaseUrlDraft(p === 'openrouter' ? OPENROUTER_BASE_URL : COMETAPI_BASE_URL)
-    if (!apiKeyDraft.trim() || apiKeyDraft === currentEnvKey) {
-      setApiKeyDraft(nextEnvKey)
-    }
-    // Reset model map to provider defaults (user can still override)
-    setModelMapDraft(
-      p === 'openrouter'
-        ? { opus: 'anthropic/claude-opus-4-5', sonnet: 'anthropic/claude-sonnet-4-5', haiku: 'anthropic/claude-haiku-4-5' }
-        : { opus: 'claude-opus-4-5', sonnet: 'claude-sonnet-4-5', haiku: 'claude-haiku-4-5' }
-    )
     setTestState('idle')
+    setTestError('')
+    setModelSearch({ opus: '', sonnet: '', haiku: '' })
   }
 
+  const updateProviderDraft = (
+    nextProvider: LLMProvider,
+    update: (current: { apiKey: string; baseUrl: string; modelMap: Record<ModelType, string> }) => { apiKey: string; baseUrl: string; modelMap: Record<ModelType, string> },
+  ) => {
+    setProviderConfigsDraft((prev) => ({
+      ...prev,
+      [nextProvider]: update(prev[nextProvider]),
+    }))
+  }
+
+  const loadModelCatalog = async (forceRefresh = false) => {
+    if (!apiKeyDraft.trim()) return
+    setCatalogByProvider((prev) => ({
+      ...prev,
+      [provider]: { ...prev[provider], loading: true, error: '' },
+    }))
+
+    const result = await fetchModelCatalog(apiKeyDraft, baseUrlDraft, { forceRefresh })
+    setCatalogByProvider((prev) => ({
+      ...prev,
+      [provider]: {
+        loading: false,
+        error: result.ok ? '' : (result.error ?? ''),
+        fromCache: result.fromCache,
+        fetchedAt: result.fetchedAt,
+        models: result.models,
+      },
+    }))
+  }
+
+  useEffect(() => {
+    const state = catalogByProvider[provider]
+    if (!apiKeyDraft.trim() || state.loading || state.models.length > 0) return
+    void loadModelCatalog(false)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [provider])
+
+  const catalog = catalogByProvider[provider]
+  const fuzzyMatches = useMemo(() => ({
+    opus: filterModels(catalog.models, modelSearch.opus),
+    sonnet: filterModels(catalog.models, modelSearch.sonnet),
+    haiku: filterModels(catalog.models, modelSearch.haiku),
+  }), [catalog.models, modelSearch])
+
   const handleSave = () => {
-    llm.setConfig({ provider, apiKey: apiKeyDraft, baseUrl: baseUrlDraft, modelMap: modelMapDraft, debugMode: debugDraft })
+    llm.setProviderConfigs(provider, providerConfigsDraft, debugDraft)
     llm.setWebSearch({ enabled: wsEnabled, provider: wsProvider, apiKey: wsKey, model: wsModel })
     // Save MCP config; (dis)connect based on enabled toggle
     mcp.setConfig({ gatewayUrl: mcpUrl, bearerToken: mcpToken, enabled: mcpEnabled })
@@ -291,14 +392,27 @@ const LLMSettingsContent: React.FC = () => {
   const handleClearData = () => {
     llm.clearPersistedData()
     const freshProvider = getDefaultLLMProvider()
-    const freshBaseUrl = freshProvider === 'openrouter' ? OPENROUTER_BASE_URL : COMETAPI_BASE_URL
-    const freshModelMap = freshProvider === 'openrouter' ? { ...OPENROUTER_DEFAULT_MODEL_MAP } : { ...DEFAULT_MODEL_MAP }
+    const freshProviderConfigs = {
+      cometapi: {
+        apiKey: getEnvApiKey('cometapi'),
+        baseUrl: COMETAPI_BASE_URL,
+        modelMap: { ...DEFAULT_MODEL_MAP },
+      },
+      openrouter: {
+        apiKey: getEnvApiKey('openrouter'),
+        baseUrl: OPENROUTER_BASE_URL,
+        modelMap: { ...OPENROUTER_DEFAULT_MODEL_MAP },
+      },
+    }
     const freshWS = getEnvWebSearchConfig()
     setProviderDraft(freshProvider)
-    setApiKeyDraft(getEnvApiKey(freshProvider))
-    setBaseUrlDraft(freshBaseUrl)
-    setModelMapDraft(freshModelMap)
+    setProviderConfigsDraft(freshProviderConfigs)
     setDebugDraft(false)
+    setModelSearch({ opus: '', sonnet: '', haiku: '' })
+    setCatalogByProvider({
+      cometapi: { loading: false, error: '', fromCache: false, models: [] },
+      openrouter: { loading: false, error: '', fromCache: false, models: [] },
+    })
     setWsEnabled(freshWS.enabled)
     setWsProvider(freshWS.provider)
     setWsKey(freshWS.apiKey)
@@ -421,7 +535,10 @@ const LLMSettingsContent: React.FC = () => {
           <input
             type={showKey ? 'text' : 'password'}
             value={apiKeyDraft}
-            onChange={(e) => { setApiKeyDraft(e.target.value); setTestState('idle') }}
+            onChange={(e) => {
+              updateProviderDraft(provider, (current) => ({ ...current, apiKey: e.target.value }))
+              setTestState('idle')
+            }}
             placeholder={provider === 'openrouter' ? 'sk-or-…' : 'sk-…'}
             aria-label="CometAPI key"
             style={inputStyle}
@@ -436,7 +553,10 @@ const LLMSettingsContent: React.FC = () => {
         <input
           type="url"
           value={baseUrlDraft}
-          onChange={(e) => { setBaseUrlDraft(e.target.value); setTestState('idle') }}
+          onChange={(e) => {
+            updateProviderDraft(provider, (current) => ({ ...current, baseUrl: e.target.value }))
+            setTestState('idle')
+          }}
           aria-label="CometAPI base URL"
           style={{ ...inputStyle, marginBottom: '16px' }}
         />
@@ -453,7 +573,10 @@ const LLMSettingsContent: React.FC = () => {
                 <input
                   type="text"
                   value={modelMapDraft[tier]}
-                  onChange={(e) => setModelMapDraft((m) => ({ ...m, [tier]: e.target.value }))}
+                  onChange={(e) => updateProviderDraft(provider, (current) => ({
+                    ...current,
+                    modelMap: { ...current.modelMap, [tier]: e.target.value },
+                  }))}
                   aria-label={`Model ID for ${tier}`}
                   style={{ ...inputStyle, flex: 1 }}
                 />
@@ -464,7 +587,10 @@ const LLMSettingsContent: React.FC = () => {
                   <button
                     key={preset}
                     type="button"
-                    onClick={() => setModelMapDraft((m) => ({ ...m, [tier]: preset }))}
+                    onClick={() => updateProviderDraft(provider, (current) => ({
+                      ...current,
+                      modelMap: { ...current.modelMap, [tier]: preset },
+                    }))}
                     style={{
                       fontSize: '10px', padding: '2px 6px', borderRadius: '4px', cursor: 'pointer',
                       background: modelMapDraft[tier] === preset ? 'rgba(167,139,250,0.2)' : 'var(--bg-input)',
@@ -478,6 +604,83 @@ const LLMSettingsContent: React.FC = () => {
               </div>
             </div>
           ))}
+        </div>
+
+        <div style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: '8px', padding: '10px', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '8px' }}>
+            <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--t3)' }}>
+              Model Finder ({provider === 'openrouter' ? 'OpenRouter' : 'CometAPI'} /models)
+            </span>
+            <button
+              type="button"
+              onClick={() => { void loadModelCatalog(true) }}
+              disabled={catalog.loading || !apiKeyDraft.trim()}
+              style={{ ...smallBtnStyle, color: '#A78BFA', background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.35)', opacity: catalog.loading || !apiKeyDraft.trim() ? 0.6 : 1 }}
+            >
+              {catalog.loading ? 'Refreshing…' : 'Refresh models'}
+            </button>
+          </div>
+
+          <p style={{ ...hintStyle, marginBottom: '8px' }}>
+            Type to fuzzy-search model IDs and names, then click result to assign to tier.
+            {catalog.fetchedAt ? ` Last updated: ${new Date(catalog.fetchedAt).toLocaleString()}.` : ''}
+            {catalog.fromCache ? ' Loaded from cache.' : ''}
+          </p>
+
+          {catalog.error && (
+            <div style={{ ...errorBoxStyle, marginBottom: '8px' }}>{catalog.error}</div>
+          )}
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {MODEL_TIERS.map((tier) => (
+              <div key={`finder-${tier}`} style={{ border: '1px solid var(--border)', borderRadius: '6px', padding: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ width: '68px', fontSize: '11px', color: 'var(--t3)', textTransform: 'uppercase' }}>{tier}</span>
+                  <input
+                    type="text"
+                    value={modelSearch[tier]}
+                    onChange={(e) => setModelSearch((prev) => ({ ...prev, [tier]: e.target.value }))}
+                    placeholder="Search models…"
+                    aria-label={`Search models for ${tier}`}
+                    style={{ ...inputStyle, flex: 1, fontSize: '12px', padding: '6px 9px' }}
+                  />
+                </div>
+                {fuzzyMatches[tier].length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '6px' }}>
+                    {fuzzyMatches[tier].map((item) => (
+                      <button
+                        key={`${tier}-${item.id}`}
+                        type="button"
+                        onClick={() => {
+                          updateProviderDraft(provider, (current) => ({
+                            ...current,
+                            modelMap: { ...current.modelMap, [tier]: item.id },
+                          }))
+                          setModelSearch((prev) => ({ ...prev, [tier]: item.id }))
+                        }}
+                        title={item.name}
+                        style={{
+                          fontSize: '10px',
+                          padding: '3px 7px',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          border: '1px solid var(--border)',
+                          background: modelMapDraft[tier] === item.id ? 'rgba(167,139,250,0.2)' : 'var(--bg-card)',
+                          color: modelMapDraft[tier] === item.id ? '#A78BFA' : 'var(--t3)',
+                          fontFamily: 'var(--ff-mono)',
+                        }}
+                      >
+                        {item.id}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {modelSearch[tier].trim() && fuzzyMatches[tier].length === 0 && (
+                  <p style={{ ...hintStyle, marginTop: '6px' }}>No matching models in catalog.</p>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Debug Mode */}

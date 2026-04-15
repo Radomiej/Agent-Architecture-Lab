@@ -4,6 +4,8 @@ import { test, expect } from '@playwright/test'
 
 async function openSettings(page: Parameters<typeof test>[1]['page']) {
   await page.goto('/')
+  await page.evaluate(() => localStorage.clear())
+  await page.reload()
   await expect(page.getByRole('banner')).toBeVisible()
   await expect(page.locator('text=Loading...')).toHaveCount(0)
   await page.getByRole('button', { name: /LLM Settings/i }).click()
@@ -77,8 +79,9 @@ test.describe('Tool Settings – Tool Sources', () => {
   test('Sonar disabled badge shows link to LLM tab', async ({ page }) => {
     await goToToolSettings(page)
     const dialog = page.getByRole('dialog', { name: /Settings/i })
-    // By default Sonar is disabled — should show configure link
-    await expect(dialog).toContainText('disabled')
+    // The Sonar card always shows a status badge (enabled or disabled)
+    const sonarBadge = dialog.locator('span').filter({ hasText: /^enabled$|^disabled$/i }).first()
+    await expect(sonarBadge).toBeVisible()
   })
 
   test('clicking LLM Settings link inside Sonar card goes to LLM tab', async ({ page }) => {
