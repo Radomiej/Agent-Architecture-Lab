@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useUiStore } from '../../store/uiStore'
 import { useSimulationStore } from '../../store/simulationStore'
@@ -7,6 +7,7 @@ import { useCostStore } from '../../store/costStore'
 import { useLLMStore } from '../../store/llmStore'
 import { useScenarioStore } from '../../store/scenarioStore'
 import { cn } from '../../utils/cn'
+import { cloneGraph, encodeCanvasToHash } from '../../utils/scenarioSnapshot'
 
 export const TopBar: React.FC = () => {
   const { t } = useTranslation()
@@ -21,6 +22,44 @@ export const TopBar: React.FC = () => {
   const [saving, setSaving] = useState(false)
   const [saveName, setSaveName] = useState('')
   const saveInputRef = useRef<HTMLInputElement>(null)
+  const importInputRef = useRef<HTMLInputElement>(null)
+
+  const connections = useCanvasStore((s) => s.connections)
+  const { restoreSnapshot } = useScenarioStore()
+
+  const handleExportJSON = useCallback(() => {
+    const snapshot = cloneGraph(nodes, connections)
+    const data = { ...snapshot, exportedAt: new Date().toISOString() }
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `canvas-${Date.now()}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  }, [nodes, connections])
+
+  const handleImportJSON = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target?.result as string) as { nodes?: unknown; connections?: unknown }
+        if (Array.isArray(data.nodes) && Array.isArray(data.connections)) {
+          restoreSnapshot({ nodes: data.nodes as Parameters<typeof restoreSnapshot>[0]['nodes'], connections: data.connections as Parameters<typeof restoreSnapshot>[0]['connections'], version: 'v33' })
+        }
+      } catch { /* invalid JSON — silently ignore */ }
+      e.target.value = ''
+    }
+    reader.readAsText(file)
+  }, [restoreSnapshot])
+
+  const handleShareURL = useCallback(() => {
+    const encoded = encodeCanvasToHash(nodes, connections)
+    const url = `${window.location.origin}${window.location.pathname}#canvas=${encoded}`
+    navigator.clipboard.writeText(url).catch(() => undefined)
+  }, [nodes, connections])
 
   const cost = getCostSummary(nodes)
   const ctx = getContextSummary(nodes)
@@ -124,6 +163,50 @@ export const TopBar: React.FC = () => {
       {/* Mermaid Export */}
       <button onClick={() => openModal('mermaid')} title="Export Mermaid" className="btn-ghost-app" aria-label="Export Mermaid diagram">
         ⬡
+      </button>
+
+      {/* Export canvas as JSON */}
+      <button
+        onClick={handleExportJSON}
+        disabled={nodes.length === 0}
+        title={t('topbar.exportJSON', 'Export canvas as JSON')}
+        className="btn-ghost-app"
+        aria-label={t('topbar.exportJSON', 'Export canvas as JSON')}
+        style={{ opacity: nodes.length === 0 ? 0.4 : 1 }}
+      >
+        ↓
+      </button>
+
+      {/* Import canvas from JSON */}
+      <>
+        <input
+          ref={importInputRef}
+          type="file"
+          accept=".json,application/json"
+          onChange={handleImportJSON}
+          aria-label={t('topbar.importJSON', 'Import canvas from JSON')}
+          style={{ display: 'none' }}
+        />
+        <button
+          onClick={() => importInputRef.current?.click()}
+          title={t('topbar.importJSON', 'Import canvas from JSON')}
+          className="btn-ghost-app"
+          aria-label={t('topbar.importJSON', 'Import canvas from JSON')}
+        >
+          ↑
+        </button>
+      </>
+
+      {/* Share URL */}
+      <button
+        onClick={handleShareURL}
+        disabled={nodes.length === 0}
+        title={t('topbar.shareURL', 'Copy shareable URL')}
+        className="btn-ghost-app"
+        aria-label={t('topbar.shareURL', 'Copy shareable URL')}
+        style={{ opacity: nodes.length === 0 ? 0.4 : 1 }}
+      >
+        🔗
       </button>
 
       {/* Save configuration */}

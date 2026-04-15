@@ -29,7 +29,11 @@ interface StoredData {
   savedConfigs?: SavedConfig[]
 }
 
-function loadFromStorage(): StoredData {
+interface StoredResult extends StoredData {
+  migratedFrom?: string
+}
+
+function loadFromStorage(): StoredResult {
   for (const key of MIGRATION_KEYS) {
     try {
       const raw = localStorage.getItem(key)
@@ -38,6 +42,7 @@ function loadFromStorage(): StoredData {
         if (key !== CURRENT_KEY) {
           localStorage.setItem(CURRENT_KEY, raw)
           localStorage.removeItem(key)
+          return { ...parsed, migratedFrom: key }
         }
         return parsed
       }
@@ -63,6 +68,7 @@ const stored = loadFromStorage()
 interface PresetStore {
   customAgents: Agent[]
   savedConfigs: SavedConfig[]
+  migratedFrom: string | null
   addCustomAgent: (agent: Agent) => void
   removeCustomAgent: (id: string) => void
   updateCustomAgent: (id: string, updates: Partial<Agent>) => void
@@ -74,6 +80,7 @@ interface PresetStore {
 export const usePresetStore = create<PresetStore>((set, get) => ({
   customAgents: stored.customAgents ?? [],
   savedConfigs: stored.savedConfigs ?? [],
+  migratedFrom: stored.migratedFrom ?? null,
 
   addCustomAgent: (agent) => {
     const updated = [...get().customAgents.filter((a) => a.id !== agent.id), { ...agent, isCustom: true }]

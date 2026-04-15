@@ -14,14 +14,17 @@ import { TaskPromptModal } from './components/modals/TaskPromptModal'
 import { DebugPanel } from './components/debug/DebugPanel'
 import { McpToolsPanel } from './components/debug/McpToolsPanel'
 import { MobileNav } from './components/layout/MobileNav'
+import { ErrorBoundary } from './components/primitives/ErrorBoundary'
 import { useUiStore } from './store/uiStore'
 import { useCanvasStore } from './store/canvasStore'
 import { useSimulationStore } from './store/simulationStore'
 import { useVfsStore } from './store/vfsStore'
 import { useMcpStore } from './store/mcpStore'
+import { usePresetStore } from './store/presetStore'
 import { AD_MAP } from './data/agents'
 import { ToastContainer } from './components/primitives/Toast'
 import { simulateToolCalls } from './utils/toolSimulator'
+import { decodeCanvasFromHash } from './utils/scenarioSnapshot'
 import type { ToolType } from './types'
 
 const TOOL_ICONS: Record<ToolType, string> = {
@@ -53,6 +56,8 @@ function AppLayout() {
   const msgCursorRef = useRef(0)
   const vfsSeededRef = useRef(false)
   const prevPipelineRunningRef = useRef(false)
+  const migratedFrom = usePresetStore((s) => s.migratedFrom)
+  const [migrationDismissed, setMigrationDismissed] = useState(false)
 
   // Auto-connect MCP gateway on startup if previously enabled
   useEffect(() => {
@@ -60,6 +65,21 @@ function AppLayout() {
       void mcp.connect()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Load canvas from URL hash on startup (#canvas=<encoded>)
+  useEffect(() => {
+    const hash = window.location.hash
+    const match = hash.match(/[#&]canvas=([A-Za-z0-9_-]+)/)
+    if (!match) return
+    const canvas = useCanvasStore.getState()
+    // Only auto-load if canvas is currently empty to avoid overwriting existing work
+    if (canvas.nodes.length > 0) return
+    const decoded = decodeCanvasFromHash(match[1])
+    if (decoded) {
+      canvas.replaceGraph(decoded.nodes, decoded.connections)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Auto-open review modal when real pipeline finishes
@@ -238,6 +258,31 @@ function AppLayout() {
 
       <TopBar />
 
+      {/* Migration banner — shown once when data was silently migrated from an old localStorage key */}
+      {migratedFrom && !migrationDismissed && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="flex items-center justify-between gap-3 px-4 py-2 text-xs shrink-0"
+          style={{
+            background: 'rgba(167,139,250,0.1)',
+            borderBottom: '1px solid rgba(167,139,250,0.25)',
+            color: '#A78BFA',
+          }}
+        >
+          <span>
+            ✦ Your saved data was migrated from an older version (<code style={{ opacity: 0.75 }}>{migratedFrom}</code>). Everything is preserved.
+          </span>
+          <button
+            onClick={() => setMigrationDismissed(true)}
+            aria-label="Dismiss migration notice"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#A78BFA', opacity: 0.7, fontSize: 16 }}
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       {/* Mobile drawer: Left sidebar — stops above MobileNav (bottom-14), starts below TopBar (top-12) */}
       {leftDrawerOpen && (
         <>
@@ -281,7 +326,9 @@ function AppLayout() {
           <LeftSidebar />
         </div>
 
-        <CanvasArea />
+        <ErrorBoundary label="Canvas">
+          <CanvasArea />
+        </ErrorBoundary>
 
         {/* Right sidebar — hidden on mobile, shown on md+ */}
         <div className="hidden md:flex md:flex-col" style={{ width: 300, minWidth: 300, borderLeft: '1px solid var(--border)', background: 'var(--bg-panel)' }}>
@@ -293,11 +340,13 @@ function AppLayout() {
       <MobileNav />
 
       {/* Modals */}
-      <CostModal />
-      <MermaidModal />
-      <LLMSettingsModal />
-      <SimulationReviewModal />
-      <TaskPromptModal />
+      <ErrorBoundary label="Modals">
+        <CostModal />
+        <MermaidModal />
+        <LLMSettingsModal />
+        <SimulationReviewModal />
+        <TaskPromptModal />
+      </ErrorBoundary>
 
       {/* Debug panel */}
       <DebugPanel />
