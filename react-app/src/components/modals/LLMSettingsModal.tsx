@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useUiStore } from '../../store/uiStore'
 import { useLLMStore } from '../../store/llmStore'
+import { useMcpStore } from '../../store/mcpStore'
 import { testConnection, testWebSearchConnection, COMETAPI_BASE_URL, OPENROUTER_BASE_URL, DEFAULT_MODEL_MAP, OPENROUTER_DEFAULT_MODEL_MAP } from '../../services/llmService'
 import type { ModelType, LLMProvider, WebSearchProvider, SonarModelId } from '../../types'
 import { SONAR_MODELS } from '../../types'
@@ -35,6 +36,13 @@ type TestState = 'idle' | 'testing' | 'ok' | 'error'
 const LLMSettingsContent: React.FC = () => {
   const { closeModal } = useUiStore()
   const llm = useLLMStore()
+  const mcp = useMcpStore()
+
+  // ── MCP Gateway state ───────────────────────────────────────────────────────
+  const [mcpUrl, setMcpUrl] = useState(mcp.config.gatewayUrl)
+  const [mcpToken, setMcpToken] = useState(mcp.config.bearerToken)
+  const [mcpEnabled, setMcpEnabled] = useState(mcp.config.enabled)
+  const [showMcpToken, setShowMcpToken] = useState(false)
 
   // ── LLM Provider state ──────────────────────────────────────────────────────
   const [provider, setProviderDraft] = useState<LLMProvider>(llm.provider)
@@ -78,6 +86,13 @@ const LLMSettingsContent: React.FC = () => {
   const handleSave = () => {
     llm.setConfig({ provider, apiKey: apiKeyDraft, baseUrl: baseUrlDraft, modelMap: modelMapDraft, debugMode: debugDraft })
     llm.setWebSearch({ enabled: wsEnabled, provider: wsProvider, apiKey: wsKey, model: wsModel })
+    // Save MCP config; (dis)connect based on enabled toggle
+    mcp.setConfig({ gatewayUrl: mcpUrl, bearerToken: mcpToken, enabled: mcpEnabled })
+    if (mcpEnabled) {
+      void mcp.connect()
+    } else {
+      void mcp.disconnect()
+    }
     closeModal()
   }
 
@@ -374,6 +389,115 @@ const LLMSettingsContent: React.FC = () => {
               {testLabel(wsTestState)}
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+          SECTION 3 — MCP Gateway (Docker Desktop)
+          ═══════════════════════════════════════════════════════════════════════ */}
+      <div style={sectionBoxStyle}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+          <div style={sectionTitleStyle}>🐳 MCP Gateway — Docker Desktop tools</div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '12px', color: mcpEnabled ? '#34D399' : 'var(--t4)' }}>
+            <input
+              type="checkbox"
+              checked={mcpEnabled}
+              onChange={(e) => setMcpEnabled(e.target.checked)}
+              style={{ width: '14px', height: '14px', cursor: 'pointer' }}
+            />
+            {mcpEnabled ? 'Enabled' : 'Disabled'}
+          </label>
+        </div>
+
+        <div style={{ opacity: mcpEnabled ? 1 : 0.45, pointerEvents: mcpEnabled ? 'auto' : 'none', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <p style={hintStyle}>
+            Start the gateway with:{' '}
+            <code style={{ userSelect: 'all' }}>docker mcp gateway run --port 8808 --transport streaming</code>
+            {' '}and paste the URL + Bearer token shown in the output.
+          </p>
+
+          {/* Gateway URL */}
+          <div>
+            <label style={labelStyle}>Gateway URL</label>
+            <input
+              type="url"
+              value={mcpUrl}
+              onChange={(e) => setMcpUrl(e.target.value)}
+              placeholder="http://localhost:8808/mcp"
+              aria-label="MCP Gateway URL"
+              style={inputStyle}
+            />
+          </div>
+
+          {/* Bearer Token */}
+          <div>
+            <label style={labelStyle}>Bearer Token</label>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <input
+                type={showMcpToken ? 'text' : 'password'}
+                value={mcpToken}
+                onChange={(e) => setMcpToken(e.target.value)}
+                placeholder="h0eagz… (leave empty if not required)"
+                aria-label="MCP Bearer Token"
+                style={inputStyle}
+              />
+              <button type="button" onClick={() => setShowMcpToken((v) => !v)} style={iconBtnStyle} aria-label={showMcpToken ? 'Hide token' : 'Show token'}>
+                {showMcpToken ? '🙈' : '👁'}
+              </button>
+            </div>
+          </div>
+
+          {/* Current status + tool count */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '10px',
+            padding: '8px 12px', borderRadius: '6px',
+            background: mcp.status === 'connected'
+              ? 'rgba(52,211,153,0.08)'
+              : mcp.status === 'error'
+              ? 'rgba(248,113,113,0.08)'
+              : 'var(--bg-input)',
+            border: `1px solid ${mcp.status === 'connected' ? 'rgba(52,211,153,0.25)' : mcp.status === 'error' ? 'rgba(248,113,113,0.25)' : 'var(--border)'}`,
+          }}>
+            <span style={{ fontSize: '12px', color: mcp.status === 'connected' ? '#34D399' : mcp.status === 'error' ? '#F87171' : 'var(--t3)' }}>
+              {mcp.status === 'connected' && `✓ Connected — ${mcp.tools.length} tool${mcp.tools.length !== 1 ? 's' : ''} available`}
+              {mcp.status === 'connecting' && '⏳ Connecting…'}
+              {mcp.status === 'error' && `✗ ${mcp.errorMsg ?? 'Connection failed'}`}
+              {mcp.status === 'disconnected' && '○ Disconnected'}
+            </span>
+            {mcp.status === 'connected' && (
+              <button
+                type="button"
+                onClick={() => { void mcp.refreshTools() }}
+                style={{ ...btnStyle, padding: '3px 10px', fontSize: '11px', background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--t2)', cursor: 'pointer', marginLeft: 'auto' }}
+              >
+                ↺ Refresh
+              </button>
+            )}
+          </div>
+
+          {/* Tool list (collapsed) */}
+          {mcp.status === 'connected' && mcp.tools.length > 0 && (
+            <details style={{ fontSize: '11px', color: 'var(--t3)' }}>
+              <summary style={{ cursor: 'pointer', userSelect: 'none', color: 'var(--t2)', marginBottom: '6px' }}>
+                Available tools ({mcp.tools.length})
+              </summary>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', maxHeight: '140px', overflowY: 'auto' }}>
+                {mcp.tools.map((t) => (
+                  <span
+                    key={t.name}
+                    title={t.description}
+                    style={{
+                      padding: '2px 7px', borderRadius: '4px', fontSize: '11px',
+                      background: 'rgba(52,211,153,0.08)', border: '1px solid rgba(52,211,153,0.2)',
+                      color: '#34D399', fontFamily: 'var(--ff-mono)',
+                    }}
+                  >
+                    {t.name}
+                  </span>
+                ))}
+              </div>
+            </details>
+          )}
         </div>
       </div>
 

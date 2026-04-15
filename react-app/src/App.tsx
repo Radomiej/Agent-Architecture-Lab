@@ -12,11 +12,13 @@ import { LLMSettingsModal } from './components/modals/LLMSettingsModal'
 import { SimulationReviewModal } from './components/modals/SimulationReviewModal'
 import { TaskPromptModal } from './components/modals/TaskPromptModal'
 import { DebugPanel } from './components/debug/DebugPanel'
+import { McpToolsPanel } from './components/debug/McpToolsPanel'
 import { MobileNav } from './components/layout/MobileNav'
 import { useUiStore } from './store/uiStore'
 import { useCanvasStore } from './store/canvasStore'
 import { useSimulationStore } from './store/simulationStore'
 import { useVfsStore } from './store/vfsStore'
+import { useMcpStore } from './store/mcpStore'
 import { AD_MAP } from './data/agents'
 import { ToastContainer } from './components/primitives/Toast'
 import { simulateToolCalls } from './utils/toolSimulator'
@@ -46,10 +48,19 @@ function AppLayout() {
     messages,
     isPipelineRunning,
   } = useSimulationStore()
+  const mcp = useMcpStore()
   const [toasts, setToasts] = useState<Array<{ id: string; message: string; type?: 'info' | 'success' | 'warn' | 'error' }>>([])
   const msgCursorRef = useRef(0)
   const vfsSeededRef = useRef(false)
   const prevPipelineRunningRef = useRef(false)
+
+  // Auto-connect MCP gateway on startup if previously enabled
+  useEffect(() => {
+    if (mcp.config.enabled && mcp.status === 'disconnected') {
+      void mcp.connect()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Auto-open review modal when real pipeline finishes
   useEffect(() => {
@@ -203,6 +214,7 @@ function AppLayout() {
       if (e.key === 'p' || e.key === 'P') { openModal('taskPrompt'); return }
       if (e.key === ',') { openModal('settings'); return }
       if (e.key === 'd' || e.key === 'D') { toggleDebugPanel(); return }
+      if (e.key === 'g' || e.key === 'G') { useMcpStore.getState().togglePanel(); return }
 
       if (e.key === 'Delete' && selected.length > 0) {
         e.preventDefault()
@@ -289,6 +301,9 @@ function AppLayout() {
 
       {/* Debug panel */}
       <DebugPanel />
+
+      {/* MCP Tools panel (toggle with G key) */}
+      <McpToolsPanel />
 
       {/* Toast notifications for simulation and agent activity */}
       <ToastContainer toasts={toasts} onDismiss={(id) => setToasts((prev) => prev.filter((t) => t.id !== id))} />
