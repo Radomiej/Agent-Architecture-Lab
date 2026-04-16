@@ -16,9 +16,9 @@ const OPENROUTER_HEADERS = {
 
 /** Default model IDs for CometAPI */
 export const DEFAULT_MODEL_MAP: Record<ModelType, string> = {
-  opus: 'claude-opus-4-5',
+  opus: 'mimo-v2-pro',
   sonnet: 'claude-sonnet-4-5',
-  haiku: 'claude-haiku-4-5',
+  haiku: 'mimo-v2-flash',
 }
 
 /** Default model IDs for OpenRouter (same models, different namespace) */

@@ -43,9 +43,9 @@ const QUICK_START_GROUPS: QuickGroup[] = [
 // Quick-pick model presets shown as chips under model inputs
 const MODEL_PRESETS: Record<LLMProvider, Partial<Record<ModelType, string[]>>> = {
   cometapi: {
-    opus:   ['claude-opus-4-5'],
+    opus:   ['mimo-v2-pro', 'claude-opus-4-5'],
     sonnet: ['claude-sonnet-4-5'],
-    haiku:  ['claude-haiku-4-5'],
+    haiku:  ['mimo-v2-flash', 'claude-haiku-4-5'],
   },
   openrouter: {
     opus:   ['anthropic/claude-opus-4-5', 'openai/gpt-4o', 'google/gemini-2.5-pro'],
