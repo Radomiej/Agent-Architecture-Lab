@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { McpToolGroup } from '../types'
 
 // ─── localStorage mock ────────────────────────────────────────────────────────
@@ -37,6 +37,10 @@ function readPersisted(): {
 
 beforeEach(() => {
   localStorageMock.clear()
+})
+
+afterEach(() => {
+  vi.unstubAllEnvs()
 })
 
 // ─── initial defaults ─────────────────────────────────────────────────────────
@@ -78,6 +82,20 @@ describe('mcpStore – initial state', () => {
     const useStore = await freshMcpStore()
     expect(useStore.getState().toolGroups).toEqual([])
     expect(useStore.getState().agentToolOverrides).toEqual({})
+  })
+
+  it('uses MCP env defaults when no persisted config exists', async () => {
+    vi.stubEnv('VITE_MCP_GATEWAY_URL', 'http://localhost:9910/mcp')
+    vi.stubEnv('VITE_MCP_BEARER_TOKEN', 'env-token')
+    vi.stubEnv('VITE_MCP_GATEWAY_ENABLED', 'true')
+
+    const useStore = await freshMcpStore()
+
+    expect(useStore.getState().config).toEqual({
+      gatewayUrl: 'http://localhost:9910/mcp',
+      bearerToken: 'env-token',
+      enabled: true,
+    })
   })
 })
 

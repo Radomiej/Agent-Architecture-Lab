@@ -4,6 +4,9 @@ interface ImportMetaEnv {
   readonly VITE_LLM_PROVIDER?: 'cometapi' | 'openrouter'
   readonly VITE_COMETAPI_API_KEY?: string
   readonly VITE_OPENROUTER_API_KEY?: string
+  readonly VITE_MCP_GATEWAY_URL?: string
+  readonly VITE_MCP_BEARER_TOKEN?: string
+  readonly VITE_MCP_GATEWAY_ENABLED?: string
   readonly VITE_WEB_SEARCH_ENABLED?: string
   readonly VITE_WEB_SEARCH_PROVIDER?: 'perplexity' | 'openrouter'
   readonly VITE_WEB_SEARCH_MODEL?: 'sonar' | 'sonar-pro' | 'sonar-reasoning' | 'sonar-deep-research'

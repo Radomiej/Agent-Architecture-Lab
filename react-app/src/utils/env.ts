@@ -19,6 +19,12 @@ function parseBoolean(value: string | undefined): boolean | undefined {
   return undefined
 }
 
+export interface EnvMcpConfig {
+  gatewayUrl: string
+  bearerToken: string
+  enabled: boolean
+}
+
 function parseLLMProvider(value: string | undefined): LLMProvider | undefined {
   if (!value) return undefined
   return VALID_LLM_PROVIDERS.find((provider) => provider === value)
@@ -80,5 +86,13 @@ export function getEnvWebSearchConfig(): WebSearchConfig {
     provider,
     apiKey,
     model: parseSonarModel(readEnv('VITE_WEB_SEARCH_MODEL')) ?? DEFAULT_WEB_SEARCH_CONFIG.model,
+  }
+}
+
+export function getEnvMcpConfig(): EnvMcpConfig {
+  return {
+    gatewayUrl: readEnv('VITE_MCP_GATEWAY_URL') ?? 'http://localhost:8808/mcp',
+    bearerToken: readEnv('VITE_MCP_BEARER_TOKEN') ?? '',
+    enabled: parseBoolean(readEnv('VITE_MCP_GATEWAY_ENABLED')) ?? false,
   }
 }

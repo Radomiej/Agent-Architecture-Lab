@@ -1,0 +1,122 @@
+param(
+  [int]$GatewayPort = 8808,
+  [string]$Host = '127.0.0.1',
+  [string]$BearerToken = '',
+  [switch]$SkipInstall
+)
+
+$ErrorActionPreference = 'Stop'
+Set-StrictMode -Version Latest
+
+$repoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+$reactAppPath = Join-Path $repoRoot 'react-app'
+$reactNodeModules = Join-Path $reactAppPath 'node_modules'
+$gatewayUrl = "http://localhost:$GatewayPort/mcp"
+$gatewayProcess = $null
+$startedGatewayHere = $false
+
+function Test-CommandAvailable {
+  param([Parameter(Mandatory = $true)][string]$Name)
+
+  return $null -ne (Get-Command $Name -ErrorAction SilentlyContinue)
+}
+
+function Test-LocalTcpPortOpen {
+  param([Parameter(Mandatory = $true)][int]$Port)
+
+  $client = [System.Net.Sockets.TcpClient]::new()
+  try {
+    $connectTask = $client.ConnectAsync('127.0.0.1', $Port)
+    if (-not $connectTask.Wait(350)) {
+      return $false
+    }
+    return $client.Connected
+  } catch {
+    return $false
+  } finally {
+    $client.Dispose()
+  }
+}
+
+function Wait-ForLocalPort {
+  param(
+    [Parameter(Mandatory = $true)][int]$Port,
+    [int]$Attempts = 40
+  )
+
+  for ($attempt = 0; $attempt -lt $Attempts; $attempt++) {
+    if (Test-LocalTcpPortOpen -Port $Port) {
+      return $true
+    }
+    Start-Sleep -Milliseconds 500
+  }
+
+  return $false
+}
+
+if (-not (Test-Path $reactAppPath)) {
+  throw "Missing react-app directory: $reactAppPath"
+}
+
+if (-not (Test-CommandAvailable -Name 'docker')) {
+  throw 'Docker CLI is not available in PATH. Install Docker Desktop or add docker.exe to PATH.'
+}
+
+if (-not (Test-CommandAvailable -Name 'npm')) {
+  throw 'npm is not available in PATH. Install Node.js 20+.'
+}
+
+if (-not $SkipInstall -and -not (Test-Path $reactNodeModules)) {
+  Write-Host 'Installing react-app dependencies...'
+  Push-Location $reactAppPath
+  try {
+    & npm.cmd install
+  } finally {
+    Pop-Location
+  }
+}
+
+$resolvedBearerToken = $BearerToken
+if (-not $resolvedBearerToken -and $env:VITE_MCP_BEARER_TOKEN) {
+  $resolvedBearerToken = $env:VITE_MCP_BEARER_TOKEN
+}
+if (-not $resolvedBearerToken -and $env:MCP_BEARER_TOKEN) {
+  $resolvedBearerToken = $env:MCP_BEARER_TOKEN
+}
+
+$env:VITE_MCP_GATEWAY_URL = $gatewayUrl
+$env:VITE_MCP_GATEWAY_ENABLED = 'true'
+if ($resolvedBearerToken) {
+  $env:VITE_MCP_BEARER_TOKEN = $resolvedBearerToken
+}
+
+if (Test-LocalTcpPortOpen -Port $GatewayPort) {
+  Write-Host "MCP Gateway already listens on port $GatewayPort. Reusing existing process."
+} else {
+  Write-Host "Starting Docker MCP Gateway on $gatewayUrl ..."
+  $gatewayProcess = Start-Process -FilePath 'docker' -ArgumentList @('mcp', 'gateway', 'run', '--port', $GatewayPort, '--transport', 'streaming') -WorkingDirectory $repoRoot -PassThru
+  $startedGatewayHere = $true
+
+  if (-not (Wait-ForLocalPort -Port $GatewayPort)) {
+    if ($gatewayProcess -and -not $gatewayProcess.HasExited) {
+      Stop-Process -Id $gatewayProcess.Id -Force
+    }
+    throw "Docker MCP Gateway did not open port $GatewayPort."
+  }
+}
+
+Write-Host "React app will use MCP gateway: $gatewayUrl"
+if ($resolvedBearerToken) {
+  Write-Host 'Bearer token forwarded to Vite via VITE_MCP_BEARER_TOKEN.'
+}
+
+Push-Location $reactAppPath
+try {
+  & npm.cmd run dev -- --host $Host
+} finally {
+  Pop-Location
+  if ($startedGatewayHere -and $gatewayProcess -and -not $gatewayProcess.HasExited) {
+    Write-Host 'Stopping Docker MCP Gateway...'
+    Stop-Process -Id $gatewayProcess.Id -Force
+  }
+}

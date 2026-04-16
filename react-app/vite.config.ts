@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [tailwindcss(), react()],
   base: './',
   server: {
-    allowedHosts: ['host.docker.internal'],
+    allowedHosts: true,
     proxy: {
       '/mcp-proxy': {
         target: 'http://localhost:8808',

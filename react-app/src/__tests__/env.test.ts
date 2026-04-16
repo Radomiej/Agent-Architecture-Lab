@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { getDefaultLLMProvider, getEnvApiKey, getEnvWebSearchConfig } from '../utils/env'
+import { getDefaultLLMProvider, getEnvApiKey, getEnvMcpConfig, getEnvWebSearchConfig } from '../utils/env'
 
 afterEach(() => {
   vi.unstubAllEnvs()
@@ -38,5 +38,17 @@ describe('env helpers', () => {
     expect(config.provider).toBe('perplexity')
     expect(config.apiKey).toBe('pplx-test')
     expect(config.model).toBe('sonar-deep-research')
+  })
+
+  it('loads MCP defaults from env', () => {
+    vi.stubEnv('VITE_MCP_GATEWAY_URL', 'http://localhost:9901/mcp')
+    vi.stubEnv('VITE_MCP_BEARER_TOKEN', '  test-token  ')
+    vi.stubEnv('VITE_MCP_GATEWAY_ENABLED', 'true')
+
+    expect(getEnvMcpConfig()).toEqual({
+      gatewayUrl: 'http://localhost:9901/mcp',
+      bearerToken: 'test-token',
+      enabled: true,
+    })
   })
 })

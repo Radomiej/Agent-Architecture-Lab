@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { McpSession, type McpToolDef, type McpCallResult, type McpSessionConfig } from '../services/mcpService'
 import type { McpToolGroup } from '../types'
+import { getEnvMcpConfig } from '../utils/env'
 
 const LS_KEY = 'acMcp'
 
@@ -62,11 +63,7 @@ interface McpStore {
   togglePanel: () => void
 }
 
-const DEFAULT_CONFIG: McpConfig = {
-  gatewayUrl: 'http://localhost:8808/mcp',
-  bearerToken: '',
-  enabled: false,
-}
+const DEFAULT_CONFIG: McpConfig = getEnvMcpConfig()
 
 const sanitizeToolNames = (tools: string[]): string[] =>
   Array.from(new Set(tools.map((tool) => tool.trim()).filter(Boolean)))
