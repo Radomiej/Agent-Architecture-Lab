@@ -179,6 +179,19 @@ test.describe('Canvas interactions', () => {
     await expect(page.getByRole('button', { name: /Symulacja/i })).toBeVisible()
   })
 
+  test('simulation completion opens review preview with timeline entries', async ({ page }) => {
+    const sidebar = page.getByRole('complementary', { name: 'Left sidebar' })
+    await sidebar.getByRole('tab', { name: 'Presety' }).click()
+    await sidebar.getByRole('button', { name: 'Solo' }).click()
+
+    await page.getByRole('button', { name: /Symulacja/i }).click()
+
+    const reviewDialog = page.getByRole('dialog')
+    await expect(reviewDialog).toBeVisible({ timeout: 15000 })
+    await expect(reviewDialog.getByText(/Symulacja zakonczona\. Wszystkie kroki zostaly wykonane\./)).toBeVisible()
+    await expect(reviewDialog.getByText(/Przetwarzam etap/).first()).toBeVisible()
+  })
+
   test('toast notifications are stacked without overlap during simulation', async ({ page }) => {
     const sidebar = page.getByRole('complementary', { name: 'Left sidebar' })
     await sidebar.getByRole('tab', { name: 'Presety' }).click()

@@ -6,11 +6,13 @@ export default defineConfig({
   plugins: [tailwindcss(), react()],
   base: './',
   server: {
+    allowedHosts: ['host.docker.internal'],
     proxy: {
       '/mcp-proxy': {
         target: 'http://localhost:8808',
         rewrite: (path) => path.replace(/^\/mcp-proxy/, '/mcp'),
         changeOrigin: true,
+        headers: { Origin: 'http://localhost:8808' },
       },
     },
   },
